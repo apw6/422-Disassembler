@@ -98,6 +98,8 @@ snippet:
          BGT NEG
          BSR snippet
          NEG D1
+         MOVE.W $8500,D1
+         ADD.W #30,D5
          
 snippetEnd:
          SIMHALT
@@ -110,12 +112,17 @@ NEG:
                               ;string without CR, LF
         TRAP    #15
         
-        LEA     clearLine,A1  ;move string for a CR and LF
-        MOVE.B  #14,D0        ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        MOVE.W D1,D2
+        AND #%000000000111111,D2
+        MOVE.B D2,D5
         
+        ;BSR EAModeReg
+        ;BSR EARegMode
+        
+        
+NEGdone:
         RTS
+        
 
 
         
@@ -250,6 +257,54 @@ unknownOpCode:
         MOVEQ.L #0,D7
         RTS
         
+EA:
+        MOVE.B D5,D6
+        LSR.B #3,D6 ;mode
+        And.B  #%00000111,D5 ; register
+        
+        CMP.B #0,D6
+        BEQ DataReg
+        
+        CMP.B #2,D6
+        BEQ Pan
+        
+        CMP.B #7,D6
+        BEQ address
+        
+        BRA invalidEA
+EAdone:
+        RTS
+        
+address:
+       CMP.B #0,D5
+       BEQ addressW
+       BRA addressL
+addressW:
+        ;move A3 a word and then print the word at a A3
+        ADDQ.L #2,D7
+        BRA EAdone
+addressL:
+         
+        
+Pan:
+    ;output "(A" then D5 then ")"
+
+DataReg:
+        MOVE.B D0,D5 ;print D5 (register number)
+        
+        
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        RTS
+
+invalidEA:
+
+        ;do something
+        
 fin
 
         
@@ -333,6 +388,7 @@ badHexString:
 
 ***list of OP codes
 
+rtsInstruction   EQU %0100011100110101
 NoOpInstruction  EQU %0100111001110001
 moveInstruction  EQU 0
 bccInstruction   EQU %0110000000000000
@@ -342,7 +398,7 @@ dataInstruction  EQU 0
 ***
 
 ***list of OP masks
-
+rtsMask   EQU $FFFF
 NoOpMask  EQU $FFFF
 moveMask  EQU $C000
 bccMask   EQU $F000
@@ -414,6 +470,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
