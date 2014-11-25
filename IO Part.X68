@@ -400,11 +400,10 @@ ck_addr_range:
         
 ck_addr_range_error
 
-        LEA         invCharMsg,A1       ;Load invalid range message into A1
-        MOVE.L      invCharMsg,D1       ;Load error length to D1
+        LEA         invalidMsg,A1       ;Load invalid range message into A1
         
-        MOVE.L      #0,D0               ;Display n characters of string at (A1), 
-                                        ; n is D1.W with CR, LF. 
+        MOVE.L      #13,D0              ;Display null terminated string at (A1), 
+                                        ;with CR, LF. 
         TRAP        #15                 ;Display the error message
         MOVE.L      #-1,D3              ;Load -1 into return parameter
         BRA         ck_addr_done 
@@ -442,3 +441,9 @@ end_of_program_START:
 
 
 
+
+
+*~Font name~Courier New~
+*~Font size~12~
+*~Tab type~1~
+*~Tab size~4~
