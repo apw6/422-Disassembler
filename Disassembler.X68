@@ -128,6 +128,7 @@ NEG:
                               ;string without CR, LF
         TRAP    #15
         
+        BSR     Effective_Address
         ;BSR EAModeReg
         ;BSR EARegMode        
         
@@ -328,53 +329,6 @@ end_address:
 
 
         
-EA:
-        MOVE.B D5,D6
-        LSR.B #3,D6 ;mode
-        And.B  #%00000111,D5 ; register
-        
-        CMP.B #0,D6
-        BEQ DataReg
-        
-        CMP.B #2,D6
-        BEQ Pan
-        
-        CMP.B #7,D6
-        BEQ address
-        
-        BRA invalidEA
-EAdone:
-        RTS
-        
-address:
-       CMP.B #0,D5
-       BEQ addressW
-       BRA addressL
-addressW:
-        ;move A3 a word and then print the word at a A3
-        ADDQ.L #2,D7
-        BRA EAdone
-addressL:
-         
-        
-Pan:
-    ;output "(A" then D5 then ")"
-
-DataReg:
-        MOVE.B D0,D5 ;print D5 (register number)
-        
-        
-        
-        LEA     clearLine,A1  ;move string for a CR and LF
-        MOVE.B  #14,D0        ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
-        
-        RTS
-
-invalidEA:
-
-        ;do something
         
 fin
 
@@ -668,6 +622,196 @@ ck_addr_done:
 
         RTS                             ;Return
 
+*******************************************************************************
+*                            Effective Addressing
+*******************************************************************************
+
+Effective_Address:
+
+        MOVE.B      D5,D4
+
+        MOVE.B      D5,D6
+        LSR.B       #3,D6               ;mode
+        And.B       #%00000111,D5       ;register
+        
+        CMP.B       #0,D6               ;0 = Dn - Data Register Direct (000)
+        BEQ         Data_Reg_Direct
+        
+        CMP.B       #1,D6               ;1 = (An) - Address Register Direct (001) 
+        BEQ         Addr_Reg_Indirect
+        
+        CMP.B       #2,D6               ;2 = (An) - Address Register Indirect (010
+        BEQ         Addr_Reg_Indirect
+        
+        CMP.B       #3,D6               ;3 = (An) - Address Register Indirect with Postincrement (011)
+        BEQ         Addr_Reg_Indirect_Inc
+        
+        CMP.B       #4,D6               ;4 = (An) - Address Register Indirect with Predecrement (100)
+        BEQ         Addr_Reg_Indirect_Dec
+        
+        CMP.B       #7,D6               ;7 = (An) - Address Register Indirect with Predecrement (111)
+        BEQ         Effective_Address_Other
+        
+        BRA         invalidEA
+        
+Effective_Address_Other:        
+        
+        CMP.B       #0,D5               ;0 = (xxx).W - Absolute Short Addressing Mode (000)
+        BEQ Addr_Abs_Short
+        
+        CMP.B       #1,D5               ;1 = (xxx).W - Absolute Long Addressing Mode (001)
+        BEQ Addr_Abs_Short
+        
+        CMP.B       #1,D5               ;4 = #(data).W - Absolute Long Addressing Mode (100)
+        BEQ Addr_Immediate_Data
+        
+        BRA         invalidEA
+        
+Data_Reg_Direct:                        ;case 0(0000)
+
+        ;MOVE.B      D0,D5               ;print D5 (register number)
+        
+        
+        
+        ;LEA         clearLine,A1        ;move string for a CR and LF
+ 
+        LEA         letterD,A1          ;output 'D' for data register
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+                        
+        CLR.L       D1
+        MOVE.B      D5,D1               ;move register number for display into D1
+        MOVE.B      #3,D0               ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+        
+*how to do offset???
+        
+        BRA         Effective_Address_Exit  ;return
+        
+        
+Addr_Reg_Direct:                        ;case 1(001) - output "A" then D5
+      
+        LEA         letterA,A1          ;output 'A' for address register
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+        
+        CLR.L       D1
+        MOVE.B      D5,D1               ;move register number for display into D1
+        MOVE.B      #3,D0               ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+        
+        BRA         Effective_Address_Exit  ;return
+
+
+Addr_Reg_Indirect:                      ;case 1(010) - output "(A" then D5, then ")"
+
+        
+        LEA         lprn,A1             ;output 'D' for data register
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+
+        LEA         letterA,A1          ;output 'A' for address register
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+        
+        CLR.L       D1
+        MOVE.B      D5,D1               ;move register number for display into D1
+        MOVE.B      #3,D0               ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+
+        LEA         rprn,A1             ;output 'D' for data register
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+        TRAP        #15                 ;string without CR, LF
+        
+        BRA         Effective_Address_Exit  ;return
+
+               
+Addr_Reg_Indirect_Inc                   ;3 = (An) - Address Register Indirect with Postincrement (011)
+        
+                      
+Addr_Reg_Indirect_Dec                   ;4 = (An) - Address Register Indirect with Predecrement (100)
+        
+                       
+Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing Mode (000)
+        
+                       
+Addr_Abs_Short                          ;1 = (xxx).W - Absolute Long Addressing Mode (001)
+        
+                       
+Addr_Immediate_Data                     ;4 = #(data).W - Absolute Long Addressing Mode (100)
+
+;(An) + - Address Register Indirect with Postincrement
+;– (An) - Address Register Indirect with Predecrement Mode
+;(xxx).W - Absolute Short Addressing Mode
+;(xxx).L - Absolute Short Addressing Mode
+;#xxx - Immediate Data
+;address:
+;       CMP.B #0,D5
+;       BEQ addressW
+;       BRA addressL
+;addressW:
+;        ;move A3 a word and then print the word at a A3
+;        ADDQ.L #2,D7
+;        BRA EAdone
+;addressL:
+       
+
+
+invalidEA:
+
+        ;do something
+ 
+Effective_Address_Exit:     
+
+        RTS                             ;return
+        
+;EA:
+;        MOVE.B D5,D6
+;        LSR.B #3,D6 ;mode
+;        And.B  #%00000111,D5 ; register
+;        
+;        CMP.B #0,D6
+;        BEQ DataReg
+;        
+;        CMP.B #2,D6
+;        BEQ Pan
+;        
+;        CMP.B #7,D6
+;        BEQ address
+;        
+;
+;EAdone:
+;        RTS
+;        
+;address:
+;       CMP.B #0,D5
+;       BEQ addressW
+;       BRA addressL
+;addressW:
+;        ;move A3 a word and then print the word at a A3
+;        ADDQ.L #2,D7
+;        BRA EAdone
+;addressL:
+;         
+;        
+;Pan:
+;    ;output "(A" then D5 then ")"
+;
+;DataReg:
+;        MOVE.B D0,D5 ;print D5 (register number)
+;        
+;        
+;        
+;        LEA     clearLine,A1  ;move string for a CR and LF
+;        MOVE.B  #14,D0        ;set for task to display null terminated 
+;;                              ;string without CR, LF
+;        TRAP    #15
+;        
+;        RTS
+;
+;invalidEA:
+;
+;        ;do something
 
 
 
@@ -756,13 +900,21 @@ endLocationPrompt   DC.B    'Enter end location',0
 clearLine  DC.B $0D,$0A,0
 
 
-nopMessage  DC.B 'NOP',0 
-moveMessage DC.B 'MOVE',0
-bccMessage  DC.B 'B',0
-negMessage  DC.B 'NEG',0
-dataMessage DC.B 'DATA: ',0
+nopMessage      DC.B 'NOP: ',0 
+moveMessage     DC.B 'MOVE: ',0
+bccMessage      DC.B 'B',0
+negMessage      DC.B 'NEG: ',0
+dataMessage     DC.B 'DATA: ',0
 
-moveaMessage DC.B 'MOVEA',0
+moveaMessage    DC.B 'MOVEA: ',0
+
+letterA         DC.B 'A', 0
+letterD         DC.B 'D', 0
+
+plus            DC.B '+', 0
+minus           DC.B '-', 0
+lPrn            DC.B '(', 0
+rPrn            DC.B ')', 0
 
 
 startLocation       DC.L    0
@@ -772,6 +924,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
