@@ -657,8 +657,6 @@ ck_addr_done:
 
 Effective_Address:
 
-        MOVE.B      D5,D4
-
         MOVE.B      D5,D6
         LSR.B       #3,D6               ;mode
         And.B       #%00000111,D5       ;register
@@ -966,6 +964,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
