@@ -1,6 +1,10 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.15.02
+<<<<<<< HEAD
 Created On: 11/19/2014 11:59:34 AM
+=======
+Created On: 11/24/2014 2:39:45 PM
+>>>>>>> origin/master
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  * Title      :
@@ -13,6 +17,7 @@ Created On: 11/19/2014 11:59:34 AM
 00000000  =00005001                  9  begin   EQU   $00005001
 00000000  =00FFFFFE                 10  end     EQU   $00FFFFFE
 00000000  =00000001                 11  byte    EQU   1
+<<<<<<< HEAD
 00000000                            12  
 00001000                            13      ORG    $1000
 00001000                            14  start:
@@ -243,6 +248,468 @@ Created On: 11/19/2014 11:59:34 AM
 000011AE                           239  
 000011AE                           240  
 000011AE                           241      END    START        ; last line of source
+=======
+00000000  =00000002                 12  word    EQU   2
+00000000  =00000004                 13  long    EQU   4
+00000000                            14  
+00000FFE                            15      ORG $00000FFE
+00000FFE                            16  FarLabel:
+00001000                            17      ORG    $1000
+00001000                            18  start:
+00001000  4FF8 5000                 19          LEA stack, SP ;initialize stack
+00001004                            20          
+00001004                            21          ;LEA startLocationPrompt,A1 ;prompt for start loaction
+00001004                            22          ;MOVE.L  #13,D0
+00001004                            23          ;TRAP    #15
+00001004                            24          
+00001004                            25          ;LEA     startLocation,A1 ;get start location
+00001004                            26          ;BSR     parseHexString 
+00001004                            27          ;LEA     startLocation,A3 ;store start location in A3
+00001004                            28          ;MOVE.L  D0,(A3)
+00001004                            29          
+00001004                            30        ;  MOVE.L #$3000,A3
+00001004                            31         
+00001004  267C 00001082             32          MOVE.L #snippet,A3
+0000100A                            33          
+0000100A                            34          ;LEA endLocationPrompt,A1 ;prompt for end location
+0000100A                            35          ;MOVE.L  #13,D0
+0000100A                            36          ;TRAP    #15 
+0000100A                            37          ;MOVE.B  #4,D0   ;get end location
+0000100A                            38          ;TRAP    #15
+0000100A                            39          ;LEA endLocation,A4 ;store end location in A4
+0000100A                            40          ;MOVE.L  D0,(A4)
+0000100A                            41          
+0000100A  287C 0000109E             42          MOVE.L  #snippetEnd,A4
+00001010                            43          
+00001010                            44  mainLoop:
+00001010  B9CB                      45          CMPA.L A3,A4 ;check end of prog
+00001012  6700 01DA                 46          BEQ fin
+00001016                            47          
+00001016  3213                      48          MOVE.W (A3),D1 ;copy word from other prog to analyze as instruction
+00001018                            49          
+00001018  7600                      50          MOVEQ.L #0,D3
+0000101A                            51          
+0000101A                            52          ***things to save A3,A4,D1(?)***
+0000101A  48E7 0018                 53          MOVEM.L A3-A4,-(SP)
+0000101E  6100 000C                 54          BSR checkOPcode
+00001022  4CDF 1800                 55          MOVEM.L (SP)+,A3-A4
+00001026  D7C7                      56          ADDA.L  D7,A3 ;look past data that was part of the instruction
+00001028                            57          
+00001028  548B                      58          ADDQ.L  #word,A3
+0000102A  60E4                      59          BRA     mainLoop 
+0000102C                            60          
+0000102C                            61  checkOPcode:
+0000102C                            62  
+0000102C                            63  
+0000102C  41F9 0000105A             64          LEA     instOPList,A0 ;get instruction signitrue list in A0
+00001032  D1C3                      65          ADDA.L  D3,A0 ;get correct sig         
+00001034                            66          
+00001034  43F9 00001064             67          LEA     instMaskList,A1 ;get instruction mask in A1
+0000103A  D3C3                      68          ADDA.L  D3,A1  ;get correct mast
+0000103C                            69          
+0000103C  3401                      70          MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
+0000103E                            71          
+0000103E  C451                      72          AND.W   (A1),D2 ;mask instruction
+00001040  B450                      73          CMP.W   (A0),D2 ;compare to sig
+00001042  6700 0006                 74          BEQ     found ;if sig matches branch
+00001046                            75          
+00001046  5483                      76          ADDQ.L  #word,D3 ;if not found, add to D3 and check for next instruction
+00001048  60E2                      77          BRA checkOPcode
+0000104A                            78  
+0000104A                            79  found:
+0000104A                            80          
+0000104A  43F9 0000106E             81          LEA     instLabelList,A1 ;get instruction code label
+00001050  D3C3                      82          ADDA.L  D3,A1 ;get correct label
+00001052  D3C3                      83          ADDA.L  D3,A1
+00001054  2251                      84          MOVEA.L (A1),A1
+00001056  4E91                      85          JSR     (A1)
+00001058  4E75                      86          RTS
+0000105A                            87          
+0000105A                            88  
+0000105A= 4400 4E71 0000 6...       89  instOPList DC.W negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+00001064= FF00 FFFF C000 F...       90  instMaskList DC.W negMAsk,NoOpMask,moveMask,bccMask,dataMask          
+0000106E= 000010A2 000010B8 ...     91  instLabelList DC.L NEG,NOP, MOVE,Bcc,unknownOpCode
+00001082                            92  
+00001082                            93  snippet:
+00001082  4E71                      94           NOP
+00001084  60FC                      95           BRA snippet
+00001086  6000 FF76                 96           BRA FarLabel
+0000108A  67F6                      97           BEQ snippet
+0000108C  6E00 0014                 98           BGT NEG
+00001090  61F0                      99           BSR snippet
+00001092  4441                     100           NEG D1
+00001094  3239 00008500            101           MOVE.W $8500,D1
+0000109A  0645 001E                102           ADD.W #30,D5
+0000109E                           103           
+0000109E                           104  snippetEnd:
+0000109E  FFFF FFFF                105           SIMHALT
+000010A2                           106          
+000010A2                           107  
+000010A2                           108  NEG:
+000010A2                           109          
+000010A2  43F9 0000135E            110          LEA     negMessage,A1  ;move string for NEG info
+000010A8  103C 000E                111          MOVE.B  #14,D0        ;set for task to display null terminated 
+000010AC                           112                                ;string without CR, LF
+000010AC  4E4F                     113          TRAP    #15
+000010AE                           114          
+000010AE  3401                     115          MOVE.W D1,D2
+000010B0  C47C 003F                116          AND #%000000000111111,D2
+000010B4  1A02                     117          MOVE.B D2,D5
+000010B6                           118          
+000010B6                           119          ;BSR EAModeReg
+000010B6                           120          ;BSR EARegMode
+000010B6                           121          
+000010B6                           122          
+000010B6                           123  NEGdone:
+000010B6  4E75                     124          RTS
+000010B8                           125          
+000010B8                           126  
+000010B8                           127  
+000010B8                           128          
+000010B8                           129  NOP:
+000010B8                           130  
+000010B8  43F9 00001353            131          LEA     nopMessage,A1  ;move string for NOP info
+000010BE  103C 000D                132          MOVE.B  #13,D0        ;set for task to display null terminated 
+000010C2                           133                                ;string with CR, LF
+000010C2  4E4F                     134          TRAP    #15
+000010C4                           135  
+000010C4  4E75                     136          RTS
+000010C6                           137  MOVE:
+000010C6                           138          
+000010C6                           139          
+000010C6                           140  
+000010C6  3401                     141          MOVE.W  D1,D2
+000010C8  EC4A                     142          LSR     #6,D2
+000010CA  C43C 0007                143          AND.B   #%00000111,D2
+000010CE                           144          
+000010CE  0C02 0001                145          CMPI.B  #1,D2
+000010D2  6700 0020                146          BEQ     MOVEA
+000010D6                           147          
+000010D6  3401                     148          MOVE.W  D1,D2 ;check source mode
+000010D8  E64A                     149          LSR     #3,D2   
+000010DA  C47C 0007                150          AND.W   #$0007,D2
+000010DE                           151          
+000010DE  3401                     152          MOVE.W  D1,D2 ;check source reg
+000010E0  C47C 0007                153          AND.W   #$0007,D2
+000010E4                           154          
+000010E4                           155          
+000010E4                           156          
+000010E4  43F9 00001357            157          LEA     moveMessage,A1  ;move string for MOVE
+000010EA  103C 000D                158          MOVE.B  #13,D0        ;set for task to display null terminated 
+000010EE                           159                                ;string with CR, LF
+000010EE  4E4F                     160          TRAP    #15
+000010F0                           161  
+000010F0  7E00                     162          MOVEQ.L #0,D7
+000010F2  4E75                     163          RTS
+000010F4                           164          
+000010F4                           165  MOVEA:
+000010F4  43F9 00001369            166          LEA     moveAMessage,A1  ;move string for MOVE
+000010FA  103C 000D                167          MOVE.B  #13,D0        ;set for task to display null terminated 
+000010FE                           168                                ;string with CR, LF
+000010FE  4E4F                     169          TRAP    #15
+00001100                           170  
+00001100  4E75                     171          RTS
+00001102                           172  
+00001102                           173             
+00001102                           174  Bcc:
+00001102                           175  
+00001102  43F9 0000135C            176          LEA     bccMessage,A1  ;move string for BRA info
+00001108  103C 000E                177          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000110C                           178                                ;string without CR, LF
+0000110C  4E4F                     179          TRAP    #15
+0000110E                           180          
+0000110E  7000                     181          MOVEQ.L #0,D0 ;clear D0
+00001110  3401                     182          MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
+00001112  E04A                     183          LSR.W   #8,D2
+00001114  C47C 000F                184          AND.W   #$0F,D2 ;mask instruction
+00001118                           185          
+00001118                           186  checkCC:        
+00001118  41F9 000012BA            187          LEA     bccList,A0 ;get condition code signature list in A0
+0000111E  D1C0                     188          ADDA.L  D0,A0 ;get correct sig         
+00001120  B410                     189          CMP.B   (A0),D2 ;compare to sig
+00001122  6700 0006                190          BEQ     foundCC ;if sig matches branch
+00001126  5200                     191          ADDQ.B  #byte,D0
+00001128  60EE                     192          BRA     checkCC
+0000112A                           193  foundCC:
+0000112A  43F9 000012CA            194          LEA     conditionCodeMessage,A1 ;get condition code message in A1
+00001130  C0FC 0004                195          MULU.W  #long,D0 ;adjust size of D0 for a long
+00001134  D3C0                     196          ADDA.L  D0,A1 ;get correct message location
+00001136  2251                     197          MOVEA.L (A1),A1 ;get correct message
+00001138                           198          
+00001138  103C 000E                199          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000113C                           200                                ;string without CR, LF
+0000113C  4E4F                     201          TRAP    #15
+0000113E                           202  
+0000113E                           203          
+0000113E                           204          
+0000113E  548B                     205          ADDQ.L  #word,A3 ;move past instruction in case long displacement
+00001140  C27C 00FF                206          AND.W   #$00FF,D1   ;check for word sized displacement
+00001144                           207          
+00001144  B23C 0000                208          CMP.B   #$0,D1
+00001148  6700 0010                209          BEQ     BccWord
+0000114C                           210          
+0000114C  B23C 00FF                211          CMP.B   #$FF,D1 check for long sized displacement
+00001150  6700 0010                212          BEQ     BccLong
+00001154                           213          
+00001154                           214  BccByte:
+00001154                           215          
+00001154  7E00                     216          MOVEQ.L #0,D7 ;pass back no extra data followed
+00001156  6000 0012                217          BRA     BccDone
+0000115A                           218  BccWord:
+0000115A  3213                     219          MOVE.W  (A3),D1
+0000115C                           220          
+0000115C  7E02                     221          MOVEQ.L #word,D7 ;pass back an extra word followed
+0000115E  6000 000A                222          BRA     BccDone
+00001162                           223  BccLong:
+00001162  2213                     224          MOVE.L  (A3),D1
+00001164                           225          
+00001164  7E04                     226          MOVEQ.L #long,D7 ;pass back an extra long followed
+00001166  6000 0002                227          BRA     BccDone
+0000116A                           228  BccDone:
+0000116A                           229  
+0000116A  343C 0010                230          MOVE.W  #16,D2 ;put base in D2
+0000116E  303C 000F                231          MOVE.W  #15,D0  ;put task #15 in D0
+00001172  4E4F                     232          TRAP    #15
+00001174                           233          
+00001174  43F9 00001332            234          LEA     clearLine,A1  ;move string for a CR and LF
+0000117A  103C 000E                235          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000117E                           236                                ;string without CR, LF
+0000117E  4E4F                     237          TRAP    #15
+00001180                           238  
+00001180                           239          
+00001180  4E75                     240          RTS
+00001182                           241          
+00001182                           242          
+00001182                           243  unknownOpCode:
+00001182  43F9 00001362            244          LEA     dataMessage,A1 ;move string for data info
+00001188  103C 000E                245          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000118C                           246                                ;string without CR, LF
+0000118C  4E4F                     247          TRAP    #15
+0000118E                           248          
+0000118E  143C 0010                249          MOVE.B  #16,D2        ;set for displaying a base16(hex) number
+00001192  103C 000F                250          MOVE.B  #15,D0
+00001196  4E4F                     251          TRAP    #15
+00001198  43F9 00001332            252          LEA     clearLine,A1  ;move string for a CR and LF
+0000119E  103C 000E                253          MOVE.B  #14,D0        ;set for task to display null terminated 
+000011A2                           254                                ;string without CR, LF
+000011A2  4E4F                     255          TRAP    #15
+000011A4                           256          
+000011A4  7E00                     257          MOVEQ.L #0,D7
+000011A6  4E75                     258          RTS
+000011A8                           259          
+000011A8                           260  EA:
+000011A8  1C05                     261          MOVE.B D5,D6
+000011AA  E60E                     262          LSR.B #3,D6 ;mode
+000011AC  CA3C 0007                263          And.B  #%00000111,D5 ; register
+000011B0                           264          
+000011B0  BC3C 0000                265          CMP.B #0,D6
+000011B4  6700 0028                266          BEQ DataReg
+000011B8                           267          
+000011B8  BC3C 0002                268          CMP.B #2,D6
+000011BC  6700 0020                269          BEQ Pan
+000011C0                           270          
+000011C0  BC3C 0007                271          CMP.B #7,D6
+000011C4  6700 0008                272          BEQ address
+000011C8                           273          
+000011C8  6000 0024                274          BRA invalidEA
+000011CC                           275  EAdone:
+000011CC  4E75                     276          RTS
+000011CE                           277          
+000011CE                           278  address:
+000011CE  BA3C 0000                279         CMP.B #0,D5
+000011D2  6700 0006                280         BEQ addressW
+000011D6  6000 0006                281         BRA addressL
+000011DA                           282  addressW:
+000011DA                           283          ;move A3 a word and then print the word at a A3
+000011DA  5487                     284          ADDQ.L #2,D7
+000011DC  60EE                     285          BRA EAdone
+000011DE                           286  addressL:
+000011DE                           287           
+000011DE                           288          
+000011DE                           289  Pan:
+000011DE                           290      ;output "(A" then D5 then ")"
+000011DE                           291  
+000011DE                           292  DataReg:
+000011DE  1A00                     293          MOVE.B D0,D5 ;print D5 (register number)
+000011E0                           294          
+000011E0                           295          
+000011E0                           296          
+000011E0  43F9 00001332            297          LEA     clearLine,A1  ;move string for a CR and LF
+000011E6  103C 000E                298          MOVE.B  #14,D0        ;set for task to display null terminated 
+000011EA                           299                                ;string without CR, LF
+000011EA  4E4F                     300          TRAP    #15
+000011EC                           301          
+000011EC  4E75                     302          RTS
+000011EE                           303  
+000011EE                           304  invalidEA:
+000011EE                           305  
+000011EE                           306          ;do something
+000011EE                           307          
+000011EE                           308  fin
+000011EE                           309  
+000011EE                           310          
+000011EE                           311          
+000011EE  FFFF FFFF                312          simhalt
+000011F2                           313          
+000011F2                           314          
+000011F2                           315  
+000011F2                           316  ***Pre:     Hex String is at (A1) and null terminated
+000011F2                           317  ***         A2 is free to be used to store initial value of A1
+000011F2                           318  ***Post:    Value in hex is in D0  
+000011F2                           319  parseHexString:
+000011F2                           320          
+000011F2  2449                     321          MOVEA.L A1,A2 
+000011F4  103C 0002                322          MOVE.B  #2,D0 ;ask user for string  
+000011F8  4E4F                     323          TRAP    #15
+000011FA                           324          
+000011FA  B27C 0009                325          CMP.W   #9,D1
+000011FE  6E00 0066                326          BGT     badHexString
+00001202                           327          
+00001202  0C11 0024                328          CMP.B   #'$',(A1)
+00001206  6600 005E                329          BNE     badHexString
+0000120A  5289                     330          ADDQ.L  #byte,A1
+0000120C  7000                     331          MOVEQ.L #0,D0 ;clear D0
+0000120E  7408                     332          MOVEQ.L #8,D2 ;prevent trying to read more than 4 bytes
+00001210                           333          
+00001210                           334  HexStringBody:
+00001210                           335          
+00001210  0C11 0000                336          CMP.B   #0,(A1) ;if reach zero, end of string
+00001214  6700 002E                337          BEQ     HexStringDone
+00001218  B43C 0000                338          CMP.B   #0,D2 ;check how many nybbles have been read
+0000121C  6D00 0026                339          BLT     HexStringDone
+00001220                           340                
+00001220  0C11 0030                341          CMP.B   #'0',(A1)
+00001224  6D00 0040                342          BLT     badHexString
+00001228  0C11 0039                343          CMP.B   #'9',(A1)
+0000122C  6F00 0018                344          BLE     hexNumber
+00001230                           345          
+00001230  0C11 0041                346          CMP.B   #'A',(A1)
+00001234  6D00 0030                347          BLT     badHexString
+00001238  0C11 0046                348          CMP.B   #'F',(A1)
+0000123C  6F00 0016                349          BLE     hexAlpha
+00001240  6000 0024                350          BRA     badHexString
+00001244                           351          
+00001244                           352          
+00001244                           353  HexStringDone:
+00001244                           354          
+00001244  4E75                     355          RTS
+00001246                           356  HexNumber:
+00001246  E988                     357          LSL.L   #4,D0
+00001248  1211                     358          MOVE.B (A1),D1
+0000124A  0401 0030                359          SUB.B  #'0',D1
+0000124E  D081                     360          ADD.L  D1,D0
+00001250  5289                     361          ADDQ.L #byte,A1
+00001252  60BC                     362          BRA HexStringbody
+00001254                           363  HexAlpha:
+00001254  E988                     364          LSL.L   #4,D0
+00001256  1211                     365          MOVE.B (A1),D1
+00001258  0401 0041                366          SUB.B  #'A',D1
+0000125C  0601 000A                367          ADD.B  #10,D1
+00001260  D081                     368          ADD.L  D1,D0
+00001262  5289                     369          ADDQ.L #byte,A1
+00001264                           370  
+00001264  60AA                     371          BRA HexStringbody
+00001266                           372  badHexString:
+00001266                           373          
+00001266  43F9 00001335            374          LEA     invalidHexStringMessage,A1
+0000126C  700D                     375          MOVE.L  #13,D0
+0000126E  4E4F                     376          TRAP    #15
+00001270  224A                     377          MOVEA.L A2,A1
+00001272  6000 FF7E                378          BRA parseHexString
+00001276                           379  
+00001276  FFFF FFFF                380      SIMHALT             ; halt simulator
+0000127A                           381  
+0000127A                           382  
+0000127A                           383  
+0000127A                           384  
+0000127A                           385  
+0000127A                           386  
+0000127A                           387  * Put variables and constants here
+0000127A                           388  
+0000127A                           389  ***list of OP codes
+0000127A                           390  
+0000127A  =00004735                391  rtsInstruction   EQU %0100011100110101
+0000127A  =00004E71                392  NoOpInstruction  EQU %0100111001110001
+0000127A  =00000000                393  moveInstruction  EQU 0
+0000127A  =00006000                394  bccInstruction   EQU %0110000000000000
+0000127A  =00004400                395  negInstruction   EQU %0100010000000000
+0000127A  =00000000                396  dataInstruction  EQU 0
+0000127A                           397  
+0000127A                           398  ***
+0000127A                           399  
+0000127A                           400  ***list of OP masks
+0000127A  =0000FFFF                401  rtsMask   EQU $FFFF
+0000127A  =0000FFFF                402  NoOpMask  EQU $FFFF
+0000127A  =0000C000                403  moveMask  EQU $C000
+0000127A  =0000F000                404  bccMask   EQU $F000
+0000127A  =0000FF00                405  negMask   EQU $FF00
+0000127A  =00000000                406  dataMask  EQU 0
+0000127A                           407  ***
+0000127A                           408  
+0000127A                           409  ***Bcc Codes***
+0000127A  =00000004                410  CC EQU $04
+0000127A  =00000005                411  CS EQU $05
+0000127A  =00000007                412  EQ EQU $07
+0000127A  =0000000C                413  GE EQU $0C
+0000127A  =0000000E                414  GT EQU $0E
+0000127A  =00000002                415  HI EQU $02
+0000127A  =0000000F                416  LE EQU $0F
+0000127A  =00000003                417  LS EQU $03
+0000127A  =0000000D                418  LT EQU $0D
+0000127A  =0000000B                419  MI EQU $0B
+0000127A  =00000006                420  NE EQU $06
+0000127A  =0000000A                421  PL EQU $0A
+0000127A  =00000008                422  VC EQU $08
+0000127A  =00000009                423  VS EQU $09
+0000127A  =00000000                424  RA EQU $00 ;not really a Condition Code
+0000127A  =00000001                425  SR EQU $01 ;not really a Condition Code
+0000127A                           426  
+0000127A= 43 43 20 00              427  CCm DC.B 'CC ',0
+0000127E= 43 53 20 00              428  CSm DC.B 'CS ',0
+00001282= 45 51 20 00              429  EQm DC.B 'EQ ',0
+00001286= 47 45 20 00              430  GEm DC.B 'GE ',0
+0000128A= 47 54 20 00              431  GTm DC.B 'GT ',0
+0000128E= 48 49 20 00              432  HIm DC.B 'HI ',0
+00001292= 4C 45 20 00              433  LEm DC.B 'LE ',0
+00001296= 4C 53 20 00              434  LSm DC.B 'LS ',0
+0000129A= 4C 54 20 00              435  LTm DC.B 'LT ',0
+0000129E= 4D 49 20 00              436  MIm DC.B 'MI ',0
+000012A2= 4E 45 20 00              437  NEm DC.B 'NE ',0
+000012A6= 50 4C 20 00              438  PLm DC.B 'PL ',0
+000012AA= 56 43 20 00              439  VCm DC.B 'VC ',0
+000012AE= 56 53 20 00              440  VSm DC.B 'VS ',0
+000012B2= 52 41 20 00              441  RAm DC.B 'RA ',0
+000012B6= 53 52 20 00              442  SRm DC.B 'SR ',0
+000012BA                           443  
+000012BA= 01 04 05 07 0C 0E ...    444  BccList DC.B SR,CC,CS,EQ,GE,GT,HI,LE,LS,LT,MI,NE,PL,VC,VS,RA
+000012CA= 000012B6 0000127A ...    445  conditionCodeMessage DC.L SRm,CCm,CSm,EQm,GEm,GTm,HIm,LEm,LSm,LTm,MIm,NEm,PLm,VCm,VSm,RAm
+0000130A                           446  ***
+0000130A                           447  
+0000130A= 45 6E 74 65 72 20 ...    448  startLocationPrompt DC.B    'Enter start location',0
+0000131F= 45 6E 74 65 72 20 ...    449  endLocationPrompt   DC.B    'Enter end location',0
+00001332                           450  
+00001332= 0D 0A 00                 451  clearLine  DC.B $0D,$0A,0
+00001335                           452  
+00001335= 49 6E 76 61 6C 69 ...    453  invalidHexStringMessage DC.B 'Invalid Hex. Please try again',0
+00001353                           454  
+00001353                           455  
+00001353= 4E 4F 50 00              456  nopMessage  DC.B 'NOP',0 
+00001357= 4D 4F 56 45 00           457  moveMessage DC.B 'MOVE',0
+0000135C= 42 00                    458  bccMessage  DC.B 'B',0
+0000135E= 4E 45 47 00              459  negMessage  DC.B 'NEG',0
+00001362= 44 41 54 41 3A 20 00     460  dataMessage DC.B 'DATA: ',0
+00001369                           461  
+00001369                           462  
+00001369= 4D 4F 56 45 41 00        463  moveaMessage DC.B 'MOVEA',0
+0000136F                           464  
+0000136F                           465  
+00001370= 00000000                 466  startLocation       DC.L    0
+00001374= 00000000                 467  endLocation         DC.L    0
+00001378                           468  
+00001378                           469  
+00001378                           470     
+00001378                           471      END    START        ; last line of source
+>>>>>>> origin/master
 
 No errors detected
 No warnings generated
@@ -251,6 +718,7 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
+<<<<<<< HEAD
 BADHEXSTRING        112A
 BEGIN               5001
 BYTE                1
@@ -284,3 +752,107 @@ START               1000
 STARTLOCATION       11A6
 STARTLOCATIONPROMPT  1146
 UNKNOWNOPCODE       108C
+=======
+ADDRESS             11CE
+ADDRESSL            11DE
+ADDRESSW            11DA
+BADHEXSTRING        1266
+BCC                 1102
+BCCBYTE             1154
+BCCDONE             116A
+BCCINSTRUCTION      6000
+BCCLIST             12BA
+BCCLONG             1162
+BCCMASK             F000
+BCCMESSAGE          135C
+BCCWORD             115A
+BEGIN               5001
+BYTE                1
+CC                  4
+CCM                 127A
+CHECKCC             1118
+CHECKOPCODE         102C
+CLEARLINE           1332
+CONDITIONCODEMESSAGE  12CA
+CS                  5
+CSM                 127E
+DATAINSTRUCTION     0
+DATAMASK            0
+DATAMESSAGE         1362
+DATAREG             11DE
+EA                  11A8
+EADONE              11CC
+END                 FFFFFE
+ENDLOCATION         1374
+ENDLOCATIONPROMPT   131F
+EQ                  7
+EQM                 1282
+FARLABEL            FFE
+FIN                 11EE
+FOUND               104A
+FOUNDCC             112A
+GE                  C
+GEM                 1286
+GT                  E
+GTM                 128A
+HEXALPHA            1254
+HEXNUMBER           1246
+HEXSTRINGBODY       1210
+HEXSTRINGDONE       1244
+HI                  2
+HIM                 128E
+INSTLABELLIST       106E
+INSTMASKLIST        1064
+INSTOPLIST          105A
+INVALIDEA           11EE
+INVALIDHEXSTRINGMESSAGE  1335
+LE                  F
+LEM                 1292
+LONG                4
+LS                  3
+LSM                 1296
+LT                  D
+LTM                 129A
+MAINLOOP            1010
+MI                  B
+MIM                 129E
+MOVE                10C6
+MOVEA               10F4
+MOVEAMESSAGE        1369
+MOVEINSTRUCTION     0
+MOVEMASK            C000
+MOVEMESSAGE         1357
+NE                  6
+NEG                 10A2
+NEGDONE             10B6
+NEGINSTRUCTION      4400
+NEGMASK             FF00
+NEGMESSAGE          135E
+NEM                 12A2
+NOOPINSTRUCTION     4E71
+NOOPMASK            FFFF
+NOP                 10B8
+NOPMESSAGE          1353
+PAN                 11DE
+PARSEHEXSTRING      11F2
+PL                  A
+PLM                 12A6
+RA                  0
+RAM                 12B2
+RTSINSTRUCTION      4735
+RTSMASK             FFFF
+SNIPPET             1082
+SNIPPETEND          109E
+SR                  1
+SRM                 12B6
+STACK               5000
+START               1000
+STARTLOCATION       1370
+STARTLOCATIONPROMPT  130A
+UNKNOWNOPCODE       1182
+VC                  8
+VCM                 12AA
+VS                  9
+VSM                 12AE
+WORD                2
+>>>>>>> origin/master
