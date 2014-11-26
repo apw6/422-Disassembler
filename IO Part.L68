@@ -1,6 +1,6 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.15.02
-Created On: 11/25/2014 12:51:10 PM
+Created On: 11/26/2014 1:10:43 PM
 
 00000000                             1  *##########################################################################
 00000000                             2  * Title      : 
@@ -395,7 +395,7 @@ Created On: 11/25/2014 12:51:10 PM
 00001280  2C3C 00FFFFFE            391          MOVE.L      #end,D6             * Load maximum starting address
 00001286  B686                     392          CMP.L       D6,D3               * Is input at or below maximum?
 00001288  6E00 0006                393          BGT         ck_addr_range_error 
-0000128C  6000 0014                394          BRA         ck_addr_done        ;done checking
+0000128C  6000 0010                394          BRA         ck_addr_done        ;done checking
 00001290                           395          
 00001290                           396  *..............................................................................
 00001290                           397  * ck_addr_range_error -  A address entered is not within the 
@@ -405,39 +405,38 @@ Created On: 11/25/2014 12:51:10 PM
 00001290                           401  ck_addr_range_error
 00001290                           402  
 00001290  43F8 10D1                403          LEA         invalidMsg,A1       ;Load invalid range message into A1
-00001294  2238 1116                404          MOVE.L      invCharMsg,D1       ;Load error length to D1
-00001298                           405          
-00001298  700D                     406          MOVE.L      #13,D0               ;Display n characters of string at (A1), 
-0000129A                           407                                          ; n is D1.W with CR, LF. 
-0000129A  4E4F                     408          TRAP        #15                 ;Display the error message
-0000129C  76FF                     409          MOVE.L      #-1,D3              ;Load -1 into return parameter
-0000129E  6000 0002                410          BRA         ck_addr_done 
-000012A2                           411  
-000012A2                           412  ck_addr_done:
-000012A2                           413  
-000012A2  4E75                     414          RTS                             ;Return
-000012A4                           415          
-000012A4                           416          
-000012A4                           417  *******************************************************************************
-000012A4                           418  *                   Begin processing Effective Addresses
-000012A4                           419  *******************************************************************************
-000012A4                           420  
-000012A4                           421  Effective_label
-000012A4                           422  *Need to JSR(Jump) or BSR(Branch) to Subroutine to get here
-000012A4                           423  
-000012A4                           424  *IMPORTANT!!!!!!!!
-000012A4                           425  
-000012A4                           426  *Not sure what i need to look through(A1, D1) through and where to return my 
-000012A4                           427  *findings Maybe i am appending my findings to a data register for output dispaly
-000012A4                           428  
-000012A4                           429  Effective_label_done
-000012A4                           430  
-000012A4  4E75                     431          RTS                             ;Return
-000012A6                           432          
-000012A6                           433  
-000012A6                           434  end_of_program_START:
-000012A6                           435    
-000012A6                           436          END         START               ; last line of source
+00001294                           404          
+00001294  700D                     405          MOVE.L      #13,D0              ;Display null terminated string at (A1), 
+00001296                           406                                          ;with CR, LF. 
+00001296  4E4F                     407          TRAP        #15                 ;Display the error message
+00001298  76FF                     408          MOVE.L      #-1,D3              ;Load -1 into return parameter
+0000129A  6000 0002                409          BRA         ck_addr_done 
+0000129E                           410  
+0000129E                           411  ck_addr_done:
+0000129E                           412  
+0000129E  4E75                     413          RTS                             ;Return
+000012A0                           414          
+000012A0                           415          
+000012A0                           416  *******************************************************************************
+000012A0                           417  *                   Begin processing Effective Addresses
+000012A0                           418  *******************************************************************************
+000012A0                           419  
+000012A0                           420  Effective_label
+000012A0                           421  *Need to JSR(Jump) or BSR(Branch) to Subroutine to get here
+000012A0                           422  
+000012A0                           423  *IMPORTANT!!!!!!!!
+000012A0                           424  
+000012A0                           425  *Not sure what i need to look through(A1, D1) through and where to return my 
+000012A0                           426  *findings Maybe i am appending my findings to a data register for output dispaly
+000012A0                           427  
+000012A0                           428  Effective_label_done
+000012A0                           429  
+000012A0  4E75                     430          RTS                             ;Return
+000012A2                           431          
+000012A2                           432  
+000012A2                           433  end_of_program_START:
+000012A2                           434    
+000012A2                           435          END         START               ; last line of source
 
 No errors detected
 No warnings generated
@@ -449,7 +448,7 @@ Symbol-name         Value
 BEGIN               5001
 BEGIN_ADDRESS       1008
 BYTE                1
-CK_ADDR_DONE        12A2
+CK_ADDR_DONE        129E
 CK_ADDR_RANGE       1274
 CK_ADDR_RANGE_ERROR  1290
 CK_BOUNDRY          11C4
@@ -457,13 +456,13 @@ CK_BOUNDRY_ERROR    11E6
 CK_SIZE_ERROR       11F6
 CLEARLINE           10CE
 DATAMESSAGE         117E
-EFFECTIVE_LABEL     12A4
-EFFECTIVE_LABEL_DONE  12A4
+EFFECTIVE_LABEL     12A0
+EFFECTIVE_LABEL_DONE  12A0
 ELPROMPT            109F
 END                 FFFFFE
 ENDLOCATION         1198
 END_ADDRESS         1044
-END_OF_PROGRAM_START  12A6
+END_OF_PROGRAM_START  12A2
 ENTER_ADDR_EDIT_ALL  119E
 ENTER_ADDR_EDIT_ALL_EXIT  11C2
 EVEN_MSG            115E
