@@ -1,0 +1,491 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.15.02
+Created On: 11/21/2014 5:32:21 PM
+
+00000000                             1  *##########################################################################
+00000000                             2  * Title      : 
+00000000                             3  * Written by : Andrew Watson
+00000000                             4  *            : Elaine Keller
+00000000                             5  *            : Robert Anderson
+00000000                             6  * Date       : 11/14/2014
+00000000                             7  * Description: 
+00000000                             8  *##########################################################################
+00000000                             9  
+00000000                            10  ***************************************************************************
+00000000                            11  *                   Variable/Data Definitions
+00000000                            12  ***************************************************************************
+00000000                            13  
+00000000  =00005000                 14  stack   EQU   $00005000
+00000000  =00005001                 15  begin   EQU   $00005001
+00000000  =00FFFFFE                 16  end     EQU   $00FFFFFE
+00000000  =00000001                 17  byte    EQU   1
+00000000  =00001000                 18  prgorg  EQU   $1000
+00000000                            19  
+00001000                            20      ORG    prgorg
+00001000                            21  
+00001000                            22  ***************************************************************************
+00001000                            23  *                   Begin processing active code
+00001000                            24  ***************************************************************************
+00001000                            25      
+00001000                            26  start:
+00001000                            27  
+00001000  4FF8 5000                 28          LEA         stack, SP           ;Initialize stack
+00001004  6000 0002                 29          BRA         begin_address
+00001008                            30          
+00001008                            31  *==========================================================================
+00001008                            32  *                   Enter / Validate beginning address 
+00001008                            33  *==========================================================================
+00001008                            34   
+00001008                            35  begin_address:
+00001008                            36  
+00001008                            37         
+00001008  43F9 0000106E             38          LEA         slPrompt,A1         ;Load address for starting loaction prompt
+0000100E  2239 0000106E             39          MOVE.L      slPrompt,D1         ;Load display length to D1
+00001014  700E                      40          MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
+00001016  4E4F                      41          TRAP        #15                 ;Perform task 14 (display)
+00001018                            42          
+00001018  43F9 00001194             43          LEA         startLocation,A1    ;Load address to store user input
+0000101E  103C 0002                 44          MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
+00001022  4E4F                      45          TRAP        #15                 ;Perform task 2 (input)
+00001024                            46          
+00001024  6100 0178                 47          BSR         enter_addr_edit_all
+00001028  B67C FFFF                 48          CMP.W       #-1,D3              ;Did the edit pass?
+0000102C  67DA                      49          BEQ         begin_address       ;No, loop and ask for correct input
+0000102E                            50          
+0000102E  2643                      51          MOVEA.L     D3,A3               ;Beginning address gets stored in A3
+00001030                            52          
+00001030  43F9 0000119C             53          LEA         spc,A1              ;Load address for starting loaction prompt
+00001036  1239 0000119D             54          MOVE.B      spc_len,D1          ;Load empty line length
+0000103C  7000                      55          MOVE.L      #0,D0               ;0 = Display the NULL terminated string at (A1) with CR, LF.
+0000103E  4E4F                      56          TRAP        #15                 ;Perform task 14 (display)
+00001040                            57  
+00001040                            58          
+00001040  6000 0002                 59          BRA         end_address
+00001044                            60  
+00001044                            61  *===========================================================================
+00001044                            62  *                   Enter / Validate ending address 
+00001044                            63  *===========================================================================
+00001044                            64  
+00001044                            65  end_address:
+00001044                            66          
+00001044  43F9 0000109F             67          LEA         elPrompt,A1         ;Load address for ending loaction prompt
+0000104A                            68          ;MOVE.L     elPrompt,D1         ;Load display length to D1
+0000104A  7250                      69          MOVE.L      #80,D1       ;did not like previous command, do not know why, it should have worked
+0000104C  700E                      70          MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
+0000104E  4E4F                      71          TRAP        #15                 ;Perform task 14 (display)
+00001050                            72          
+00001050  103C 0002                 73          MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
+00001054  4E4F                      74          TRAP        #15                 ;Perform task 2 (input)
+00001056                            75          
+00001056  6100 0146                 76          BSR         enter_addr_edit_all
+0000105A  B67C FFFF                 77          CMP.W       #-1,D3              ;Did the edit pass?
+0000105E  67E4                      78          BEQ         end_address         ;No, loop and ask for correct input
+00001060                            79  
+00001060  2843                      80          MOVEA.L     D3,A4               ;Ending address gets stored in A4
+00001062  6000 0002                 81          BRA         mainLoop
+00001066                            82  
+00001066                            83  ******************************************************************************
+00001066                            84  *                   Begin processing OP Codes
+00001066                            85  ******************************************************************************
+00001066                            86        
+00001066                            87                  
+00001066                            88  mainLoop:
+00001066                            89          
+00001066  6000 0002                 90          BRA         Exit_Program
+0000106A                            91          
+0000106A                            92  loopend:
+0000106A                            93  
+0000106A                            94    
+0000106A                            95  Exit_Program:
+0000106A                            96          
+0000106A  FFFF FFFF                 97          simhalt
+0000106E                            98          
+0000106E                            99  *==============================================================================
+0000106E                           100  *                            variables and constants
+0000106E                           101  *==============================================================================
+0000106E                           102          
+0000106E= 45 6E 74 65 72 20 ...    103  slPrompt        DC.B    'Enter a starting address from $0 to $00FFFFFE: $',0
+0000109F= 45 6E 74 65 72 20 ...    104  elPrompt        DC.B    'Enter a ending address from $0 to $00FFFFFE: $',0
+000010CE                           105  
+000010CE= 0D 0A 00                 106  clearLine       DC.B    $0D,$0A,0
+000010D1                           107  
+000010D1= 20 41 64 64 72 65 ...    108  invalidMsg      DC.B    ' Address entered is not within the specified range! Please try again',0
+00001116= 20 41 20 43 68 61 ...    109  invCharMsg      DC.B    ' A Character entered is not a valid address character! Please try again',0
+0000115E                           110  
+0000115E                           111  
+0000115E= 20 59 6F 75 20 6D ...    112  even_msg        DC.B    ' You must enter an even address!'
+0000117E                           113  
+0000117E= 44 41 54 41 3A 20 00     114  dataMessage     DC.B    'DATA: ',0
+00001185= 4D 4F 56 45 00           115  moveMessage     DC.B    'MOVE',0
+0000118A= 4D 4F 56 45 41 00        116  moveaMessage    DC.B    'MOVEA',0
+00001190= 4E 4F 50 00              117  nopMessage      DC.B    'NOP',0 
+00001194                           118  
+00001194= 00000000                 119  startLocation   DC.L    0
+00001198= 00000000                 120  endLocation     DC.L    0
+0000119C                           121  
+0000119C= 20                       122  spc             DC.B    ' '
+0000119D= 01                       123  spc_len         DC.B    spc_len-spc
+0000119E                           124  
+0000119E                           125  
+0000119E                           126  
+0000119E                           127  
+0000119E                           128  
+0000119E                           129  
+0000119E                           130  *******************************************************************************
+0000119E                           131  *                            SUB ROUTINES
+0000119E                           132  *******************************************************************************
+0000119E                           133  *==============================================================================
+0000119E                           134  * enter_addr_edit_all - Enter address edit check to edit all errors  
+0000119E                           135  *                       using multiple different error checking routines.
+0000119E                           136  *
+0000119E                           137  * Parameters -
+0000119E                           138  *   Input   A1      The data that needs checked.
+0000119E                           139  *   Input   D1      The number of characters input     
+0000119E                           140  *   Output  D3      Returns '-1' when there is an error.
+0000119E                           141  *==============================================================================
+0000119E                           142  
+0000119E                           143  enter_addr_edit_all
+0000119E                           144  
+0000119E                           145  *------------------------------------------------------------------------------
+0000119E                           146  * Test for odd number of characters entered, not allowed
+0000119E                           147  *------------------------------------------------------------------------------
+0000119E                           148         
+0000119E  6100 0024                149          BSR         ck_boundry          ;check if the input is on a odd / even boundry
+000011A2  B67C FFFF                150          CMP.W       #-1,D3              ;Is the address odd?
+000011A6  6700 001A                151          BEQ         enter_addr_edit_all_exit     ;No, return
+000011AA                           152  
+000011AA                           153  *------------------------------------------------------------------------------
+000011AA                           154  * Ttest for character entered all being valid address characters
+000011AA                           155  * Note: lower case a-f, gets converted to upper case A-F in D3
+000011AA                           156  *------------------------------------------------------------------------------
+000011AA                           157          
+000011AA  6100 005A                158          BSR         parseHexString      ;check if the input contains valid Hex characters
+000011AE  B67C FFFF                159          CMP.W       #-1,D3              ;Does the address contain valid Hex characters?
+000011B2  6700 000E                160          BEQ         enter_addr_edit_all_exit     ;No, return
+000011B6                           161  
+000011B6                           162  *------------------------------------------------------------------------------
+000011B6                           163  * Verify that the address entered is witin the range defined in the Equate
+000011B6                           164  *------------------------------------------------------------------------------        
+000011B6                           165          
+000011B6  6100 00BC                166          BSR         ck_addr_range       ;is address entered witin the range 
+000011BA                           167                                          ;   as defined in the Equate? 
+000011BA  B67C FFFF                168          CMP.W       #-1,D3              ;is the address  valid?
+000011BE  6700 0002                169          BEQ         enter_addr_edit_all_exit     ;No, return
+000011C2                           170  
+000011C2                           171  enter_addr_edit_all_exit:
+000011C2                           172  
+000011C2  4E75                     173          RTS                             ;return
+000011C4                           174  
+000011C4                           175  *==============================================================================
+000011C4                           176  * ck_boundry - Check the size of the data characters input and determine
+000011C4                           177  *              if an odd number of characters was entered
+000011C4                           178  *
+000011C4                           179  * Parameters -
+000011C4                           180  *   Input   A1      The data that needs checked for odd length.
+000011C4                           181  *   Input   D1      The number of characters input     
+000011C4                           182  *   Output  D3      Returns '-1' when there is an odd length.
+000011C4                           183  *==============================================================================
+000011C4                           184  
+000011C4                           185  ck_boundry:
+000011C4                           186  
+000011C4  4243                     187          CLR.W       D3                  ;Clear the return
+000011C6                           188  
+000011C6  B23C 0000                189          CMP.B       #0,D1               ;Check for nothing entered
+000011CA  6700 002A                190          BEQ         ck_size_error       ;Number of characters entered must be 
+000011CE                           191                                          ;greater than 0  
+000011CE                           192          
+000011CE                           193          
+000011CE                           194          * The program will branch to ck_size_error if D1 is greater than #8        
+000011CE  B23C 0008                195          CMP.B       #8,D1               ;Check for more than 8 characters entered
+000011D2  6E00 0022                196          BGT         ck_size_error       ;Number of characters entered must be less
+000011D6                           197                                          ;than 9
+000011D6                           198          
+000011D6  7402                     199          MOVE.L      #$00000002,D2       ;Load a long 2 into D1
+000011D8  82C2                     200          DIVU        D2,D1               ;Divide address by 2
+000011DA  4841                     201          SWAP        D1                  ;get remainder
+000011DC  B23C 0001                202          CMP.B       #$01,D1             ;Check for remainder of 1
+000011E0  6700 0004                203          BEQ         ck_boundry_error    ;Number of characters entered must be an 
+000011E4                           204                                          ;even number   
+000011E4                           205    
+000011E4  4E75                     206          RTS                             ;return
+000011E6                           207  
+000011E6                           208  *------------------------------------------------------------------------------
+000011E6                           209  * ck_boundry_error - An odd number of characters was entered
+000011E6                           210  *                  - Load error message and display it
+000011E6                           211  *                  - Return error condition
+000011E6                           212  *------------------------------------------------------------------------------
+000011E6                           213          
+000011E6                           214  ck_boundry_error:
+000011E6                           215  
+000011E6  43F8 115E                216          LEA         even_msg,A1         ;Load odd error message into A1
+000011EA  2238 115E                217          MOVE.L      even_msg,D1         ;Load error length to D1
+000011EE                           218          
+000011EE  7000                     219          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+000011F0                           220                                          ; n is D1.W with CR, LF. 
+000011F0  4E4F                     221          TRAP #15                        ;Display the error message
+000011F2  76FF                     222          MOVE.L #-1,D3                   ;Load -1 into return parameter
+000011F4  4E75                     223          RTS                             ;Return
+000011F6                           224          
+000011F6                           225  *------------------------------------------------------------------------------
+000011F6                           226  * ck_size_error -   The number of characters entered must be more than zero
+000011F6                           227  *                  - Load error message and display it
+000011F6                           228  *                  - Return error condition
+000011F6                           229  *------------------------------------------------------------------------------
+000011F6                           230          
+000011F6                           231  ck_size_error:
+000011F6                           232  
+000011F6  43F8 10D1                233          LEA         invalidMsg,A1       ;Load invalid range message into A1
+000011FA  2238 10D1                234          MOVE.L      invalidMsg,D1       ;Load error length to D1
+000011FE                           235          
+000011FE  7000                     236          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+00001200                           237                                          ; n is D1.W with CR, LF. 
+00001200  4E4F                     238          TRAP        #15                 ;Display the error message
+00001202  76FF                     239          MOVE.L      #-1,D3              ;Load -1 into return parameter
+00001204  4E75                     240          RTS                             ;Return        
+00001206                           241  
+00001206                           242  
+00001206                           243  *==============================================================================
+00001206                           244  * parseHexString - Converts user input string into a valid memory address
+00001206                           245  *                - Stores parsed address data into D3
+00001206                           246  *                - Stores good/bad (1/0) data in D4 
+00001206                           247  *
+00001206                           248  * Hex values are stored as bytes in D2, the ASCII chart shows their value
+00001206                           249  *   The ASCII chart values we care about are in the ranges of: 
+00001206                           250  *                            Hex            Decimal
+00001206                           251  *       No Value           NULL = 0         0
+00001206                           252  *       Numeric Values:     0-9 = 30-39     48-57
+00001206                           253  *       Upper Case letters: A-F = 41-46     65-70
+00001206                           254  *       Lower Case letterc: a-f = 61-66     97-102
+00001206                           255  
+00001206                           256  * Parameters -
+00001206                           257  *   Input   A1      The data that needs checked for valid input.
+00001206                           258  *   Output  D3      The return value, '-1' for error
+00001206                           259  *==============================================================================
+00001206                           260  
+00001206                           261  parseHexString:
+00001206                           262  
+00001206                           263  * setup any initializing item that do not get looped through
+00001206  4243                     264          CLR.W       D3                  ;Clear the return
+00001208                           265  
+00001208                           266          
+00001208                           267  *------------------------------------------------------------------------------
+00001208                           268  * NextHex - Loop through all bytes and vaildate the input
+00001208                           269  * Parameters -
+00001208                           270  *   Input   A1      The data that needs checked for valid input.
+00001208                           271  *   Output  D3      The return value, '-1' for error
+00001208                           272  *------------------------------------------------------------------------------
+00001208                           273          
+00001208                           274  NextHex:
+00001208                           275  
+00001208  1419                     276          MOVE.B      (A1)+,D2            ;Examine next character and decode it
+0000120A  B43C 0000                277          CMP.B       #0,D2               ;Check character for null 
+0000120E  6700 0062                278          BEQ         NextHexReturn       ;Character is null (end of input)
+00001212                           279          
+00001212                           280  *................................................................................
+00001212                           281  *  Check decimal values 0-9 by testing hexadecimal values 30-39
+00001212                           282  *................................................................................
+00001212                           283                  
+00001212                           284          * The program will branch to hex_range_error if D2 is less than #30
+00001212  B43C 0030                285          CMP.B       #48,D2              ;Hex value 30 = Ascii numeric value 0
+00001216  6D00 0048                286          BLT         hex_range_error     ;Branch to handle range error hexidecimal
+0000121A                           287                                          ;processing
+0000121A                           288          
+0000121A                           289          * The program will branch to UcaseHex if D2 is greater than #39
+0000121A  B43C 0039                290          CMP.B       #57,D2              ;Hex value 30 = Ascii numeric value 0
+0000121E  6E00 000A                291          BGT         UcaseHex            ;Branch to upper case hexidecimal processing
+00001222                           292          
+00001222                           293          *a valid number was found within this range
+00001222  0402 0030                294          SUBI.B      #48,D2              ;Change ascii decimal code to actual value
+00001226  6000 0032                295          BRA         NextHexDone         ;Done parsing this byte
+0000122A                           296  
+0000122A                           297  
+0000122A                           298  *..............................................................................
+0000122A                           299  *  Check upper case values A-F by testing hexadecimal values 41-46
+0000122A                           300  *..............................................................................
+0000122A                           301  
+0000122A                           302  UcaseHex:
+0000122A                           303  
+0000122A                           304          * The program will branch to hex_range_error if D2 is less than #41
+0000122A  B43C 0041                305          CMP.B       #65,D2              ;Hex value 41 = Ascii character value 'A'
+0000122E  6D00 0030                306          BLT         hex_range_error     ;Branch to handle range error hexidecimal
+00001232                           307                                          ;processing
+00001232                           308          
+00001232  B43C 0046                309          CMP.B       #70,D2              ;Hex value 46 = Ascii character value 'F'
+00001236  6E00 000A                310          BGT         LcaseHex            ;Branch to handle lower case hexidecimal 
+0000123A                           311                                          ;processing
+0000123A                           312          
+0000123A                           313          *a valid number was found within this range
+0000123A  0402 0037                314          SUBI.B      #55,D2              ;Change uppercase character to actual value
+0000123E  6000 001A                315          BRA         NextHexDone         ;Done parsing this byte
+00001242                           316  
+00001242                           317  
+00001242                           318  *..............................................................................
+00001242                           319  *  Check lower case values a-f by testing hexadecimal values 61-66
+00001242                           320  *..............................................................................
+00001242                           321  
+00001242                           322  LcaseHex
+00001242                           323          
+00001242                           324          * The program will branch to hex_range_error if D2 is less than #61
+00001242  B43C 0061                325          CMP.B       #97,D2              ;Hex value 61 = Ascii character value 'a'
+00001246  6D00 0018                326          BLT         hex_range_error     ;Branch to handle range error hexidecimal 
+0000124A                           327                                          ;processing
+0000124A                           328  
+0000124A  B43C 0066                329          CMP.B       #102,D2              ;Hex value 66 = Ascii character value 'f'
+0000124E  6E00 0010                330          BGT         hex_range_error     ;Branch to handle range error hexidecimal 
+00001252                           331                                          ;processing
+00001252                           332  
+00001252                           333          *a valid number was found within this range
+00001252  0402 0057                334          SUBI.B      #87,D2              ;Change lowercase character to actual value
+00001256  6000 0002                335          BRA         NextHexDone         ;Done parsing this byte
+0000125A                           336  
+0000125A                           337  NextHexDone:
+0000125A                           338  
+0000125A  E983                     339          ASL.L       #4,D3               ; Make rooom for new byte in the return register
+0000125C  D602                     340          ADD.B       D2,D3               ; Move the new byte into the return register
+0000125E  60A8                     341          BRA         NextHex             ; We're ready to parse the next byte
+00001260                           342          
+00001260                           343  *-------------------------------------------------------------------------------------
+00001260                           344  * hex_range_error -  A character entered was within the valid range for a hex address
+00001260                           345  *                 -  Load error message and display it
+00001260                           346  *                 -  Return error condition
+00001260                           347  *-------------------------------------------------------------------------------------
+00001260                           348          
+00001260                           349  hex_range_error:
+00001260                           350  
+00001260  43F8 1116                351          LEA         invCharMsg,A1       ;Load invalid range message into A1
+00001264  2238 1116                352          MOVE.L      invCharMsg,D1       ;Load error length to D1
+00001268                           353          
+00001268  7000                     354          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+0000126A                           355                                          ; n is D1.W with CR, LF. 
+0000126A  4E4F                     356          TRAP        #15                 ;Display the error message
+0000126C  76FF                     357          MOVE.L      #-1,D3              ;Load -1 into return parameter
+0000126E  6000 0002                358          BRA         NextHexReturn
+00001272                           359          
+00001272                           360  NextHexReturn:
+00001272                           361          
+00001272  4E75                     362          RTS                             ;Return      
+00001274                           363  
+00001274                           364  
+00001274                           365  *===============================================================================
+00001274                           366  * ck_addr_range - check the address input is within a valid memory address range
+00001274                           367  *                - Parsed address data into D3
+00001274                           368  *
+00001274                           369  * Parameters -
+00001274                           370  *   Input   A1      The data that needs checked for valid address.
+00001274                           371  *   Output  D3      The return value, '-1' for error
+00001274                           372  *===============================================================================
+00001274                           373  
+00001274                           374  
+00001274                           375  ck_addr_range:   
+00001274                           376  
+00001274                           377  *------------------------------------------------------------------------------
+00001274                           378  * Verify that the address entered is witin the 
+00001274                           379  * beginning range ('begin') as defined in the Equate
+00001274                           380  *------------------------------------------------------------------------------   
+00001274                           381              
+00001274  2C3C 00005001            382          MOVE.L      #begin,D6           * Load minimum starting address
+0000127A  B686                     383          CMP.L       D6,D3               * Is input at or above minimum?
+0000127C  6D00 0012                384          BLT         ck_addr_range_error 
+00001280                           385          
+00001280                           386  *------------------------------------------------------------------------------
+00001280                           387  * Verify that the address entered is witin the 
+00001280                           388  * ending range ('end') as defined in the Equate
+00001280                           389  *------------------------------------------------------------------------------
+00001280                           390          
+00001280  2C3C 00FFFFFE            391          MOVE.L      #end,D6             * Load maximum starting address
+00001286  B686                     392          CMP.L       D6,D3               * Is input at or below maximum?
+00001288  6E00 0006                393          BGT         ck_addr_range_error 
+0000128C  6000 0014                394          BRA         ck_addr_done        ;done checking
+00001290                           395          
+00001290                           396  *..............................................................................
+00001290                           397  * ck_addr_range_error -  A address entered is not within the 
+00001290                           398  *                        valid range for a hex address
+00001290                           399  *..............................................................................
+00001290                           400          
+00001290                           401  ck_addr_range_error
+00001290                           402  
+00001290  43F8 1116                403          LEA         invCharMsg,A1       ;Load invalid range message into A1
+00001294  2238 1116                404          MOVE.L      invCharMsg,D1       ;Load error length to D1
+00001298                           405          
+00001298  7000                     406          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+0000129A                           407                                          ; n is D1.W with CR, LF. 
+0000129A  4E4F                     408          TRAP        #15                 ;Display the error message
+0000129C  76FF                     409          MOVE.L      #-1,D3              ;Load -1 into return parameter
+0000129E  6000 0002                410          BRA         ck_addr_done 
+000012A2                           411  
+000012A2                           412  ck_addr_done:
+000012A2                           413  
+000012A2  4E75                     414          RTS                             ;Return
+000012A4                           415          
+000012A4                           416          
+000012A4                           417  *******************************************************************************
+000012A4                           418  *                   Begin processing Effective Addresses
+000012A4                           419  *******************************************************************************
+000012A4                           420  
+000012A4                           421  Effective_label
+000012A4                           422  *Need to JSR(Jump) or BSR(Branch) to Subroutine to get here
+000012A4                           423  
+000012A4                           424  *IMPORTANT!!!!!!!!
+000012A4                           425  
+000012A4                           426  *Not sure what i need to look through(A1, D1) through and where to return my 
+000012A4                           427  *findings Maybe i am appending my findings to a data register for output dispaly
+000012A4                           428  
+000012A4                           429  Effective_label_done
+000012A4                           430  
+000012A4  4E75                     431          RTS                             ;Return
+000012A6                           432          
+000012A6                           433  
+000012A6                           434  end_of_program_START:
+000012A6                           435    
+000012A6                           436          END         START               ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+BEGIN               5001
+BEGIN_ADDRESS       1008
+BYTE                1
+CK_ADDR_DONE        12A2
+CK_ADDR_RANGE       1274
+CK_ADDR_RANGE_ERROR  1290
+CK_BOUNDRY          11C4
+CK_BOUNDRY_ERROR    11E6
+CK_SIZE_ERROR       11F6
+CLEARLINE           10CE
+DATAMESSAGE         117E
+EFFECTIVE_LABEL     12A4
+EFFECTIVE_LABEL_DONE  12A4
+ELPROMPT            109F
+END                 FFFFFE
+ENDLOCATION         1198
+END_ADDRESS         1044
+END_OF_PROGRAM_START  12A6
+ENTER_ADDR_EDIT_ALL  119E
+ENTER_ADDR_EDIT_ALL_EXIT  11C2
+EVEN_MSG            115E
+EXIT_PROGRAM        106A
+HEX_RANGE_ERROR     1260
+INVALIDMSG          10D1
+INVCHARMSG          1116
+LCASEHEX            1242
+LOOPEND             106A
+MAINLOOP            1066
+MOVEAMESSAGE        118A
+MOVEMESSAGE         1185
+NEXTHEX             1208
+NEXTHEXDONE         125A
+NEXTHEXRETURN       1272
+NOPMESSAGE          1190
+PARSEHEXSTRING      1206
+PRGORG              1000
+SLPROMPT            106E
+SPC                 119C
+SPC_LEN             119D
+STACK               5000
+START               1000
+STARTLOCATION       1194
+UCASEHEX            122A
