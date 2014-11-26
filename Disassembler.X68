@@ -24,12 +24,6 @@ FarLabel:
     ORG    prgorg
 start:
         LEA stack, SP ;initialize stack
-        
-stack   EQU   $00005000
-begin   EQU   $00005001
-end     EQU   $00FFFFFE
-byte    EQU   1
-prgorg  EQU   $1000
 
     ORG    prgorg
 
@@ -40,9 +34,9 @@ prgorg  EQU   $1000
 start:
 
         LEA         stack, SP           ;Initialize stack
-        BRA         begin_address       
-        ;MOVE.L #snippet,A3
-        ;MOVE.L  #snippetEnd,A4
+        ;BRA         begin_address       
+        MOVE.L #snippet,A3
+        MOVE.L  #snippetEnd,A4
        
 
 ******************************************************************************
@@ -778,6 +772,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
