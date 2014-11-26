@@ -78,7 +78,8 @@ checkOPcode:
         BEQ     match ;if sig matches branch
         
 falsePositive:
-
+;investigate possile bug where breaking out of BSR with branch (no RTS) leaves
+;instruction on the stack
         ADDQ.L  #word,D3 ;if not found, add to D3 and check for next instruction
         BRA checkOPcode
 
@@ -113,6 +114,31 @@ snippetEnd:
 
 NEG:
         
+        
+NegEA        DC.B %000000,%010000, %011000, %100000, %101000, %111000, %111001
+NegEAmasks   DC.B %111000,%111000, %111000, %111000, %111000, %111111, %111111,0
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+validNegModes:
+        
+        LEA NegEAmasks,A1
+        ADDA.L D0,A1
+        MOVE.B (A1),D5
+        CMPI.B #0,D5
+        BEQ falsePositive
+        MOVE.B D1,D2
+        AND.B D5,D2
+        LEA NegEA,A1
+        ADDA.L D0,A1
+        MOVE.B (A1),D4
+        CMP.B D4,D2
+        BEQ NegBody
+        BRA validNegModes
+        
+NegBody:
+
+
         LEA     negMessage,A1  ;move string for NEG info
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string without CR, LF
@@ -933,6 +959,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
