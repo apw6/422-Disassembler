@@ -122,17 +122,20 @@ NEG:
         AND #%000000000111111,D2
         MOVE.B D2,D5
         
-        
-        LEA     clearLine,A1  ;move string for a CR and LF
-        MOVE.B  #14,D0        ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
-        
         BSR     Effective_Address
+        
+        
+        
+        
         ;BSR EAModeReg
         ;BSR EARegMode        
         
 NEGdone:
+
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
         RTS
         
 
@@ -734,9 +737,15 @@ Addr_Reg_Indirect_Dec                   ;4 = (An) - Address Register Indirect wi
                        
 Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing Mode (000)
         
+        ADDA.L #word,A3
+        ;print word (A3)
+        ADDI.L #word,D7 
                        
-Addr_Abs_Short                          ;1 = (xxx).W - Absolute Long Addressing Mode (001)
+Addr_Abs_Short                          ;1 = (xxx).L - Absolute Long Addressing Mode (001)
         
+        ADDA.L #word,A3
+        ;print long (A3)
+        ADDI.L #long,D7
                        
 Addr_Immediate_Data                     ;4 = #(data).W - Absolute Long Addressing Mode (100)
 
@@ -924,6 +933,8 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
+
 
 
 
