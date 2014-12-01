@@ -159,9 +159,9 @@ match:
         RTS
         
 
-instOPList DC.W rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList DC.L RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+instOPList DC.W jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+instMaskList DC.W jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList DC.L JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -173,6 +173,8 @@ snippet:
          NEG D1
          MOVE.W $8500,D1
          ADDI.W #30,D5
+         RTS
+         jsr $54
          
 snippetEnd:
          SIMHALT
@@ -207,6 +209,11 @@ validNegModes:
 NegBody:
 
 
+        MOVE.W  D1,D2 ;copy inst to D2
+        AND.W  #%0011000000000,D2 ;mask word for size
+        CMPI.W #0,D2 ;0 is the only non valid size
+        BEQ falsePositive ; zero is not valid
+
         LEA     negMessage,A1  ;move string for NEG info
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string without CR, LF
@@ -229,12 +236,63 @@ NEGdone:
         MOVEQ.L #0,D0
         RTS
         
+JsrEA        DC.B %010000, %111000, %111001,0
+JsrEAmasks   DC.B %111000, %111111, %111111,0
+   
+JSR:            
+     
+        MOVEQ.L #0, D0 ;clear D0
+        
+validJsrModes:
+        
+        LEA JsrEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        LEA JsrEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ JsrBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validJsrModes ;check for next mode
+        
+JsrBody:
+
+
+        LEA     jsrMessage,A1  ;move string for NEG info
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        MOVE.W D1,D2
+        AND #%000000000111111,D2
+        MOVE.B D2,D5
+        
+        BSR     Effective_Address
+        
+              
+        
+Jsrdone:
+
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        MOVEQ.L #0,D0
+        RTS
 
 
         
 NOP:
 
-        LEA     nopMessage,A1  ;move string for NOP info
+        LEA     nopMessage,A1 ;move string for NOP info
         MOVE.B  #13,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
@@ -1055,8 +1113,8 @@ spc_len         DC.B    spc_len-spc
 
 
 ***list of OP codes
-
-rtsInstruction   EQU %0100011100110101
+jsrInstruction   EQU %0100111010000000
+rtsInstruction   EQU %0100111001110101
 NoOpInstruction  EQU %0100111001110001
 moveInstruction  EQU 0
 bccInstruction   EQU %0110000000000000
@@ -1066,6 +1124,7 @@ dataInstruction  EQU 0
 ***
 
 ***list of OP masks
+jsrMask   EQU %1111111111000000
 rtsMask   EQU $FFFF
 NoOpMask  EQU $FFFF
 moveMask  EQU $C000
@@ -1118,7 +1177,8 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
-rtsMessage      DC.B 'RTS',0
+jsrMessage      DC.B 'JSR: ',0
+rtsMessage      DC.B 'RTS ',0
 nopMessage      DC.B 'NOP: ',0 
 moveMessage     DC.B 'MOVE: ',0
 bccMessage      DC.B 'B',0
