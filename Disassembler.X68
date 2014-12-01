@@ -344,7 +344,67 @@ moveBody
         MOVEQ.L #0,D0
         RTS
         
+moveADestEA        DC.B %001000,0
+moveADestEAmasks   DC.B %111000,0
+        
 MOVEA:
+
+        MOVEQ.L #0, D0 ;clear D0
+        
+validMoveASourceModes:
+        
+        LEA moveSourceEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA moveSourceEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  checkMoveADest ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validMoveASourceModes ;check for next mode
+        
+checkMoveADest:
+        MOVEQ.L #0, D0 ;clear D0
+validMoveADestModes:
+        
+        LEA moveADestEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.W D1,D2 ;copy instruction to D2
+        LSR.W #5,D2  ;move mode
+        BSR switchModeAndReg ;switch register and mode
+        AND.B D5,D2  ;mask D2
+        
+        LEA moveADestEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ moveABody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validMoveADestModes ;check for next mode
+moveABody:
+        MOVE.W  D1,D2 ;copy inst to D2
+        AND.W  #%0011000000000,D2 ;mask word for size
+        CMPI.W #0,D2 ;0 is the non valid size
+        BEQ falsePositive ; if zero, this is not move
+        CMPI.W #%0001000000000,D2
+        BEQ falsePositive ; if byte, this is not movea
+
+
         LEA     moveAMessage,A1  ;move string for MOVE
         MOVE.B  #13,D0        ;set for task to display null terminated 
                               ;string with CR, LF
