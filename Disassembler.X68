@@ -271,9 +271,9 @@ JsrBody:
                               ;string without CR, LF
         TRAP    #15
         
-        MOVE.W D1,D2
-        AND #%000000000111111,D2
-        MOVE.B D2,D5
+        MOVE.W D1,D2 ;copy inst to D2
+        AND #%000000000111111,D2 ;and out everything but modes and regs
+        MOVE.B D2,D5 ; copy to D5 for following BSR
         
         BSR     Effective_Address
         
@@ -371,28 +371,30 @@ validMoveDestModes:
         
 moveBody
         MOVE.W  D1,D2 ;copy inst to D2
-        AND.W  #%0011000000000,D2 ;mask word for size
+        AND.W  #%0011000000000000,D2 ;mask word for size
         CMPI.W #0,D2 ;0 is the only non valid size
         BEQ falsePositive ; if zero, this is not move
 
-        MOVE.W  D1,D2
-        LSR     #6,D2
-        AND.B   #%00000111,D2
-        
-        CMPI.B  #1,D2
-        BEQ     MOVEA
-        
-        MOVE.W  D1,D2 ;check source mode
-        LSR     #3,D2   
-        AND.W   #$0007,D2
-        
-        MOVE.W  D1,D2 ;check source reg
-        AND.W   #$0007,D2
-        
         LEA     moveMessage,A1  ;move string for MOVE
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
+        
+        
+        MOVE.W  D1,D2 ;check source mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        BSR     Effective_Address
+        
+        ;print separator
+        
+        MOVE.W  D1,D2 ;check dest mode
+        LSR.W   #6,D2
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        BSR     Effective_Address
+        
+        
         
         LEA     clearLine,A1  ;move string for a CR and LF
         MOVE.B  #14,D0        ;set for task to display null terminated 
@@ -456,10 +458,10 @@ validMoveADestModes:
         BRA validMoveADestModes ;check for next mode
 moveABody:
         MOVE.W  D1,D2 ;copy inst to D2
-        AND.W  #%0011000000000,D2 ;mask word for size
+        AND.W  #%0011000000000000,D2 ;mask word for size
         CMPI.W #0,D2 ;0 is the non valid size
         BEQ falsePositive ; if zero, this is not move
-        CMPI.W #%0001000000000,D2
+        CMPI.W #%0001000000000000,D2
         BEQ falsePositive ; if byte, this is not movea
 
 
