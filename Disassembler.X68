@@ -130,28 +130,38 @@ checkOPcode:
         MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
         
         AND.W   (A1),D2 ;mask instruction
+        
+        
+        
+        
         CMP.W   (A0),D2 ;compare to sig
         BEQ     match ;if sig matches branch
+        ADDQ.L  #word,D3 ;add to D3 to check for next instruction
+        BRA checkOPcode
         
 falsePositive:
-;investigate possile bug where breaking out of BSR with branch (no RTS) leaves
-;instruction on the stack
-        ADDQ.L  #word,D3 ;if not found, add to D3 and check for next instruction
-        BRA checkOPcode
+        
+        MOVE.B #-1,D0
+        RTS
 
 match:
         
         LEA     instLabelList,A1 ;get instruction code label
         ADDA.L  D3,A1 ;get correct label
         ADDA.L  D3,A1
+        ADDQ.L  #word,D3 ;add to D3 incase false positive
         MOVEA.L (A1),A1
+        MOVEM.L D3,-(SP) ; save D3
         JSR     (A1)
+        MOVEM.L (SP)+,D3 ;restore D3
+        CMP.B   #-1,D0
+        BEQ     checkOPcode
         RTS
         
 
-instOPList DC.W negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W negMAsk,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList DC.L NEG,NOP, MOVE,Bcc,unknownOpCode
+instOPList DC.W rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+instMaskList DC.W rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList DC.L RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -167,30 +177,32 @@ snippet:
 snippetEnd:
          SIMHALT
         
-
-NEG:
-        
-        
-NegEA        DC.B %000000,%010000, %011000, %100000, %101000, %111000, %111001
+NegEA        DC.B %000000,%010000, %011000, %100000, %101000, %111000, %111001,0
 NegEAmasks   DC.B %111000,%111000, %111000, %111000, %111000, %111111, %111111,0
-        
+   
+NEG:            
+     
         MOVEQ.L #0, D0 ;clear D0
         
 validNegModes:
         
-        LEA NegEAmasks,A1
-        ADDA.L D0,A1
-        MOVE.B (A1),D5
-        CMPI.B #0,D5
-        BEQ falsePositive
-        MOVE.B D1,D2
-        AND.B D5,D2
-        LEA NegEA,A1
-        ADDA.L D0,A1
-        MOVE.B (A1),D4
-        CMP.B D4,D2
-        BEQ NegBody
-        BRA validNegModes
+        LEA NegEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        LEA NegEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ NegBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validNegModes ;check for next mode
         
 NegBody:
 
@@ -206,11 +218,7 @@ NegBody:
         
         BSR     Effective_Address
         
-        
-        
-        
-        ;BSR EAModeReg
-        ;BSR EARegMode        
+              
         
 NEGdone:
 
@@ -218,6 +226,7 @@ NEGdone:
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string without CR, LF
         TRAP    #15
+        MOVEQ.L #0,D0
         RTS
         
 
@@ -229,14 +238,84 @@ NOP:
         MOVE.B  #13,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
-
+        
+        MOVEQ.L #0,D0
         RTS
+        
+RTS:
+        
+        LEA     rtsMessage,A1  ;move string for rts info
+        MOVE.B  #13,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15  
+   
+        MOVEQ.L #0,D0
+        RTS   
+
+moveSourceEA        DC.B %111100,%001000,%000000,%010000,%011000,%100000,%111000,%111001,0
+moveSourceEAmasks   DC.B %111111,%111000,%111000,%111000,%111000,%111000,%111111,%111111,0
+
+moveDestEA        DC.B %000000,%010000,%011000,%100000,%111000,%111001,0
+moveDestEAmasks   DC.B %111000,%111000,%111000,%111000,%111111,%111111,0        
+
 MOVE:
         
-        MOVE.W  D1,D2
-        AND.W  #%0011000000000,D2
-        CMPI.W #0,D2
-        BEQ falsePositive
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+validMoveSourceModes:
+        
+        LEA moveSourceEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA moveSourceEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  checkMoveDest ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validMoveSourceModes ;check for next mode
+        
+checkMoveDest:
+        MOVEQ.L #0, D0 ;clear D0
+        
+validMoveDestModes:
+        
+        LEA moveDestEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.W D1,D2 ;copy instruction to D2
+        LSR.W #5,D2  ;move mode
+        BSR switchModeAndReg ;switch register and mode
+        AND.B D5,D2  ;mask D2
+        
+        LEA moveDestEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ moveBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validMoveDestModes ;check for next mode
+        
+moveBody
+        MOVE.W  D1,D2 ;copy inst to D2
+        AND.W  #%0011000000000,D2 ;mask word for size
+        CMPI.W #0,D2 ;0 is the only non valid size
+        BEQ falsePositive ; if zero, this is not move
 
         MOVE.W  D1,D2
         LSR     #6,D2
@@ -262,7 +341,7 @@ MOVE:
                               ;string without CR, LF
         TRAP    #15
 
-        MOVEQ.L #0,D7
+        MOVEQ.L #0,D0
         RTS
         
 MOVEA:
@@ -271,6 +350,7 @@ MOVEA:
                               ;string with CR, LF
         TRAP    #15
 
+        MOVEQ.L #0,D0
         RTS
 
            
@@ -339,7 +419,7 @@ BccDone:
                               ;string without CR, LF
         TRAP    #15
 
-        
+        MOVEQ.L #0,D0
         RTS
         
         
@@ -357,7 +437,7 @@ unknownOpCode:
                               ;string without CR, LF
         TRAP    #15
         
-        MOVEQ.L #0,D7
+        MOVEQ.L #0,D0
         RTS
         
 
@@ -855,6 +935,44 @@ invalidEA:
 Effective_Address_Exit:     
 
         RTS                             ;return
+
+switchModeAndReg:
+***
+* Assumed in D2
+*
+* Assumed that they are in least significant byte:
+*
+*            _this_
+*           /      \
+*  ........ ........
+*  \                /
+*   -----word-------
+*
+*  and that in that byte they are ordered:
+*
+*       ........   
+*       \/\_/\_/
+*      /  /    \
+*    /   /      \
+* dont  one    other
+* care
+*
+* after they will be
+*
+*       ........   
+*       \/\_/\_/
+*      /  /    \
+*    /   /      \
+* dont other    one
+* care
+*** 
+        ANDI.L #0,D3 ;clear D3
+        MOVE.B D2,D3 ;copy to D3
+        LSL.B  #3,D3 
+        LSR.B  #3,D2
+        ADD.B  D3,D2
+        RTS
+
         
 *==============================================================================
 *                            variables and constants
@@ -940,7 +1058,7 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
-
+rtsMessage      DC.B 'RTS',0
 nopMessage      DC.B 'NOP: ',0 
 moveMessage     DC.B 'MOVE: ',0
 bccMessage      DC.B 'B',0
@@ -969,6 +1087,8 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
+
 
 
 
