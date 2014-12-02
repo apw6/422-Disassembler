@@ -892,7 +892,7 @@ Effective_Address_Other:
         CMP.B       #1,D5               ;1 = (xxx).W - Absolute Long Addressing Mode (001)
         BEQ Addr_Abs_Long
         
-        CMP.B       #1,D5               ;4 = #(data).W - Absolute Long Addressing Mode (100)
+        CMP.B       #4,D5               ;4 = #(data).W - Absolute Long Addressing Mode (100)
         BEQ Addr_Immediate_Data
         
         BRA         invalidEA
@@ -1017,8 +1017,9 @@ Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing
         ADDA.L      #word,A3
         
         ;print word (A3)
-        MOVE.B      #14,D0              ;set for task to display null terminated 
-        TRAP        #15                 ;string without CR, LF
+        ;MOVE.W      A3,(A1)
+        ;MOVE.B      #14,D0              ;set for task to display null terminated 
+        ;TRAP        #15                 ;string without CR, LF
         
         ADDI.L      #word,D7 
         BRA         Effective_Address_Exit  ;return
@@ -1031,8 +1032,9 @@ Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing 
 
         ADDA.L      #word,A3
         ;print long (A3)
-        MOVE.B      #14,D0              ;set for task to display null terminated 
-        TRAP        #15                 ;string without CR, LF
+        ;MOVE.L      A3,(A1)
+        ;MOVE.B      #14,D0              ;set for task to display null terminated 
+        ;TRAP        #15                 ;string without CR, LF
         
         ADDI.L      #long,D7
         BRA         Effective_Address_Exit  ;return
@@ -1207,6 +1209,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
