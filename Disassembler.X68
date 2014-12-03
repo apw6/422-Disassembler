@@ -34,66 +34,23 @@ start:
 start:
 
         LEA         stack, SP           ;Initialize stack
-        BRA         begin_address
-
-*==========================================================================
-*                   Enter / Validate beginning address 
-*==========================================================================
- 
-begin_address:
-
+        
 *.............................................................................
 * Debug Mode - Comment out when done
         MOVE.L      #snippet,A3
         MOVE.L      #snippetEnd,A4
         BRA         main_Loop
 * Debug Mode - Comment out when done
-*.............................................................................
-       
-        LEA         slPrompt,A1         ;Load address for starting loaction prompt
-        MOVE.L      slPrompt,D1         ;Load display length to D1
-        MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
-        TRAP        #15                 ;Perform task 14 (display)
+*.............................................................................        
         
-        LEA         startLocation,A1    ;Load address to store user input
-        MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
-        TRAP        #15                 ;Perform task 2 (input)
-        
-        BSR         enter_addr_edit_all
-        CMP.W       #-1,D3              ;Did the edit pass?
-        BEQ         begin_address       ;No, loop and ask for correct input
-        
-        MOVEA.L     D3,A3               ;Beginning address gets stored in A3
-        
-        LEA         spc,A1              ;Load address for starting loaction prompt
-        MOVE.B      spc_len,D1          ;Load empty line length
-        MOVE.L      #0,D0               ;0 = Display the NULL terminated string at (A1) with CR, LF.
-        TRAP        #15                 ;Perform task 14 (display)
-        BRA         end_address
+prompt_user:
 
-*===========================================================================
-*                   Enter / Validate ending address 
-*===========================================================================
-
-end_address:
+        BSR         begin_address
+        CMP.W       #-1,D3              ;Did the choose to exit, or error occur?
+        BEQ         fin                 ;Yes, then exit
         
-        LEA         elPrompt,A1         ;Load address for ending loaction prompt
-        ;MOVE.L     elPrompt,D1         ;Load display length to D1
-        MOVE.L      #80,D1       ;did not like previous command, do not know why, it should have worked
-        MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
-        TRAP        #15                 ;Perform task 14 (display)
-        
-        MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
-        TRAP        #15                 ;Perform task 2 (input)
-        
-        BSR         enter_addr_edit_all
-        CMP.W       #-1,D3              ;Did the edit pass?
-        BEQ         end_address         ;No, loop and ask for correct input
-
-        MOVEA.L     D3,A4               ;Ending address gets stored in A4
         BRA         main_Loop
-
-
+                
 ******************************************************************************
 *                   Begin processing OP Codes
 ******************************************************************************
@@ -574,6 +531,72 @@ fin
 *******************************************************************************
 *                            SUB ROUTINES
 *******************************************************************************
+
+*==========================================================================
+*                   Enter / Validate beginning address 
+*==========================================================================
+ 
+begin_address:
+
+       
+        LEA         slPrompt,A1         ;Load address for starting loaction prompt
+        MOVE.L      slPrompt,D1         ;Load display length to D1
+        MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
+        TRAP        #15                 ;Perform task 14 (display)
+        
+        LEA         startLocation,A1    ;Load address to store user input
+        MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
+        TRAP        #15                 ;Perform task 2 (input)
+        
+        CMP.B       #27,(A1)            ;Check for ESC entered
+        BEQ         address_Exit        ;Exit condition 
+        
+        BSR         enter_addr_edit_all
+        CMP.W       #-1,D3              ;Did the edit pass?
+        BEQ         begin_address       ;No, loop and ask for correct input
+        
+        MOVEA.L     D3,A3               ;Beginning address gets stored in A3
+        
+        LEA         spc,A1              ;Load address for starting loaction prompt
+        MOVE.B      spc_len,D1          ;Load empty line length
+        MOVE.L      #0,D0               ;0 = Display the NULL terminated string at (A1) with CR, LF.
+        TRAP        #15                 ;Perform task 14 (display)
+        BRA         end_address
+
+*===========================================================================
+*                   Enter / Validate ending address 
+*===========================================================================
+
+end_address:
+        
+        LEA         elPrompt,A1         ;Load address for ending loaction prompt
+        ;MOVE.L     elPrompt,D1         ;Load display length to D1
+        MOVE.L      #80,D1       ;did not like previous command, do not know why, it should have worked
+        MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
+        TRAP        #15                 ;Perform task 14 (display)
+        
+        MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
+        TRAP        #15                 ;Perform task 2 (input)
+        
+        CMP.B       #27,(A1)            ;Check for ESC entered
+        BEQ         address_Exit        ;Exit condition 
+        
+        BSR         enter_addr_edit_all
+        CMP.W       #-1,D3              ;Did the edit pass?
+        BEQ         end_address         ;No, loop and ask for correct input
+
+        MOVEA.L     D3,A4               ;Ending address gets stored in A4
+        BRA         address_done
+
+address_Exit:
+
+        MOVE.L      #-1,D3              ;Load -1 into return parameter
+        BRA         address_done
+        
+address_done:
+
+        RTS    
+
 *==============================================================================
 * enter_addr_edit_all - Enter address edit check to edit all errors  
 *                       using multiple different error checking routines.
@@ -901,12 +924,6 @@ Effective_Address_Other:
         
 Data_Reg_Direct:                        ;case 0(0000)
 
-        ;MOVE.B      D0,D5               ;print D5 (register number)
-        
-        
-        
-        ;LEA         clearLine,A1        ;move string for a CR and LF
- 
         LEA         letterD,A1          ;output 'D' for data register
         MOVE.B      #14,D0              ;set for task to display null terminated 
         TRAP        #15                 ;string without CR, LF
@@ -915,9 +932,7 @@ Data_Reg_Direct:                        ;case 0(0000)
         MOVE.B      D5,D1               ;move register number for display into D1
         MOVE.B      #3,D0               ;set for task to display null terminated 
         TRAP        #15                 ;string without CR, LF
-        
-*how to do offset???
-        
+               
         BRA         Effective_Address_Exit  ;return
         
         
@@ -1033,6 +1048,7 @@ Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing 
         TRAP        #15                 ;string without CR, LF
 
         ADDA.L      #word,A3
+        
         ;print long (A3)
         ;MOVE.L      A3,(A1)
         ;MOVE.B      #14,D0              ;set for task to display null terminated 
@@ -1211,6 +1227,8 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
+
 
 
 

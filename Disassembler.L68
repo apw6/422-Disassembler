@@ -1,6 +1,6 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.14.01
-Created On: 12/1/2014 7:13:28 PM
+Created On: 12/3/2014 12:33:03 PM
 
 00000000                             1  *##########################################################################
 00000000                             2  * Title      : 
@@ -38,1180 +38,1198 @@ Created On: 12/1/2014 7:13:28 PM
 00001000                            34  start:
 00001000                            35  
 00001000  4FF8 5000                 36          LEA         stack, SP           ;Initialize stack
-00001004  6000 0002                 37          BRA         begin_address
-00001008                            38  
-00001008                            39  *==========================================================================
-00001008                            40  *                   Enter / Validate beginning address 
-00001008                            41  *==========================================================================
-00001008                            42   
-00001008                            43  begin_address:
-00001008                            44  
-00001008                            45  *.............................................................................
-00001008                            46  * Debug Mode - Comment out when done
-00001008  267C 00001110             47          MOVE.L      #snippet,A3
-0000100E  287C 00001132             48          MOVE.L      #snippetEnd,A4
-00001014  6000 0060                 49          BRA         main_Loop
-00001018                            50  * Debug Mode - Comment out when done
-00001018                            51  *.............................................................................
-00001018                            52         
-00001018  43F9 0000169A             53          LEA         slPrompt,A1         ;Load address for starting loaction prompt
-0000101E  2239 0000169A             54          MOVE.L      slPrompt,D1         ;Load display length to D1
-00001024  700E                      55          MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
-00001026  4E4F                      56          TRAP        #15                 ;Perform task 14 (display)
-00001028                            57          
-00001028  43F9 000018BE             58          LEA         startLocation,A1    ;Load address to store user input
-0000102E  103C 0002                 59          MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
-00001032  4E4F                      60          TRAP        #15                 ;Perform task 2 (input)
-00001034                            61          
-00001034  6100 03D0                 62          BSR         enter_addr_edit_all
-00001038  B67C FFFF                 63          CMP.W       #-1,D3              ;Did the edit pass?
-0000103C  67CA                      64          BEQ         begin_address       ;No, loop and ask for correct input
-0000103E                            65          
-0000103E  2643                      66          MOVEA.L     D3,A3               ;Beginning address gets stored in A3
-00001040                            67          
-00001040  43F9 000017A7             68          LEA         spc,A1              ;Load address for starting loaction prompt
-00001046  1239 000017A8             69          MOVE.B      spc_len,D1          ;Load empty line length
-0000104C  7000                      70          MOVE.L      #0,D0               ;0 = Display the NULL terminated string at (A1) with CR, LF.
-0000104E  4E4F                      71          TRAP        #15                 ;Perform task 14 (display)
-00001050  6000 0002                 72          BRA         end_address
-00001054                            73  
-00001054                            74  *===========================================================================
-00001054                            75  *                   Enter / Validate ending address 
-00001054                            76  *===========================================================================
-00001054                            77  
-00001054                            78  end_address:
-00001054                            79          
-00001054  43F9 000016CB             80          LEA         elPrompt,A1         ;Load address for ending loaction prompt
-0000105A                            81          ;MOVE.L     elPrompt,D1         ;Load display length to D1
-0000105A  7250                      82          MOVE.L      #80,D1       ;did not like previous command, do not know why, it should have worked
-0000105C  700E                      83          MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
-0000105E  4E4F                      84          TRAP        #15                 ;Perform task 14 (display)
-00001060                            85          
-00001060  103C 0002                 86          MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
-00001064  4E4F                      87          TRAP        #15                 ;Perform task 2 (input)
-00001066                            88          
-00001066  6100 039E                 89          BSR         enter_addr_edit_all
-0000106A  B67C FFFF                 90          CMP.W       #-1,D3              ;Did the edit pass?
-0000106E  67E4                      91          BEQ         end_address         ;No, loop and ask for correct input
-00001070                            92  
-00001070  2843                      93          MOVEA.L     D3,A4               ;Ending address gets stored in A4
-00001072  6000 0002                 94          BRA         main_Loop
-00001076                            95  
-00001076                            96  
-00001076                            97  ******************************************************************************
-00001076                            98  *                   Begin processing OP Codes
-00001076                            99  ******************************************************************************
-00001076                           100   
-00001076                           101  main_Loop:
-00001076                           102  
-00001076  B9CB                     103          CMPA.L A3,A4 ;check end of prog
-00001078  6700 0388                104          BEQ fin
-0000107C                           105          
-0000107C  3213                     106          MOVE.W (A3),D1 ;copy word from other prog to analyze as instruction
-0000107E                           107          
-0000107E  7600                     108          MOVEQ.L #0,D3
-00001080                           109          
-00001080                           110          ***things to save A3,A4,D1(?)***
-00001080  48E7 0018                111          MOVEM.L A3-A4,-(SP)
-00001084  6100 000C                112          BSR checkOPcode
-00001088  4CDF 1800                113          MOVEM.L (SP)+,A3-A4
-0000108C  D7C7                     114          ADDA.L  D7,A3 ;look past data that was part of the instruction
-0000108E                           115          
-0000108E  548B                     116          ADDQ.L  #word,A3
-00001090  60E4                     117          BRA     main_Loop 
-00001092                           118          
-00001092                           119  checkOPcode:
-00001092                           120  
-00001092                           121  
-00001092  7E00                     122          MOVEQ.L #0,D7
-00001094                           123          
-00001094  41F9 000010D8            124          LEA     instOPList,A0 ;get instruction signitrue list in A0
-0000109A  D1C3                     125          ADDA.L  D3,A0 ;get correct sig         
-0000109C                           126          
-0000109C  43F9 000010E6            127          LEA     instMaskList,A1 ;get instruction mask in A1
-000010A2  D3C3                     128          ADDA.L  D3,A1  ;get correct mast
-000010A4                           129          
-000010A4  3401                     130          MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
-000010A6                           131          
-000010A6  C451                     132          AND.W   (A1),D2 ;mask instruction
-000010A8                           133          
-000010A8                           134          
-000010A8                           135          
-000010A8                           136          
-000010A8  B450                     137          CMP.W   (A0),D2 ;compare to sig
-000010AA  6700 000C                138          BEQ     match ;if sig matches branch
-000010AE  5483                     139          ADDQ.L  #word,D3 ;add to D3 to check for next instruction
-000010B0  60E0                     140          BRA checkOPcode
-000010B2                           141          
-000010B2                           142  falsePositive:
-000010B2                           143          
-000010B2  103C 00FF                144          MOVE.B #-1,D0
-000010B6  4E75                     145          RTS
-000010B8                           146  
-000010B8                           147  match:
-000010B8                           148          
-000010B8  43F9 000010F4            149          LEA     instLabelList,A1 ;get instruction code label
-000010BE  D3C3                     150          ADDA.L  D3,A1 ;get correct label
-000010C0  D3C3                     151          ADDA.L  D3,A1
-000010C2  5483                     152          ADDQ.L  #word,D3 ;add to D3 incase false positive
-000010C4  2251                     153          MOVEA.L (A1),A1
-000010C6  48E7 1000                154          MOVEM.L D3,-(SP) ; save D3
-000010CA  4E91                     155          JSR     (A1)
-000010CC  4CDF 0008                156          MOVEM.L (SP)+,D3 ;restore D3
-000010D0  B03C 00FF                157          CMP.B   #-1,D0
-000010D4  67BC                     158          BEQ     checkOPcode
-000010D6  4E75                     159          RTS
-000010D8                           160          
-000010D8                           161  
-000010D8= 4E80 4E75 4400 4...      162  instOPList DC.W jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-000010E6= FFC0 FFFF FF00 F...      163  instMaskList DC.W jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-000010F4= 000011AC 0000120C ...    164  instLabelList DC.L JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
-00001110                           165  
-00001110                           166  snippet:
-00001110  4E71                     167           NOP
-00001112  60FC                     168           BRA snippet
-00001114  6000 FEE8                169           BRA FarLabel
-00001118  67F6                     170           BEQ snippet
-0000111A  6E00 002A                171           BGT NEG
-0000111E  61F0                     172           BSR snippet
-00001120  4441                     173           NEG D1
-00001122  3239 00008500            174           MOVE.W $8500,D1
-00001128  0645 001E                175           ADDI.W #30,D5
-0000112C  4E75                     176           RTS
-0000112E  4EB8 0054                177           jsr $54
-00001132                           178           
-00001132                           179  snippetEnd:
-00001132  FFFF FFFF                180           SIMHALT
-00001136                           181          
-00001136= 00 10 18 20 28 38 ...    182  NegEA        DC.B %000000,%010000, %011000, %100000, %101000, %111000, %111001,0
-0000113E= 38 38 38 38 38 3F ...    183  NegEAmasks   DC.B %111000,%111000, %111000, %111000, %111000, %111111, %111111,0
-00001146                           184     
-00001146                           185  NEG:            
-00001146                           186       
-00001146  7000                     187          MOVEQ.L #0, D0 ;clear D0
-00001148                           188          
-00001148                           189  validNegModes:
-00001148                           190          
-00001148  43F8 113E                191          LEA NegEAmasks,A1 ;load the list of masks
-0000114C  D3C0                     192          ADDA.L D0,A1 ;displace to a specific mask
-0000114E  1A11                     193          MOVE.B (A1),D5 ;move the mask to D5
-00001150                           194          
-00001150  0C05 0000                195          CMPI.B #0,D5 ;check if the mask is 0
-00001154  6700 FF5C                196          BEQ falsePositive ;branch if it is
-00001158                           197          
-00001158  1401                     198          MOVE.B D1,D2 ;copy instruction to D2
-0000115A  C405                     199          AND.B D5,D2  ;mask D2
-0000115C  43F8 1136                200          LEA NegEA,A1 ;load the list of valid modes
-00001160  D3C0                     201          ADDA.L D0,A1 ;displace to a specific mode
-00001162  1811                     202          MOVE.B (A1),D4 ;move mode to D4
-00001164  B404                     203          CMP.B D4,D2 ;compare mode to masked value
-00001166  6700 0006                204          BEQ NegBody ;if its match, its a valid mode and we can procede
-0000116A                           205          
-0000116A  5280                     206          ADDQ.L #1,D0 ;add one to displacement
-0000116C  60DA                     207          BRA validNegModes ;check for next mode
-0000116E                           208          
-0000116E                           209  NegBody:
-0000116E                           210  
-0000116E                           211  
-0000116E  3401                     212          MOVE.W  D1,D2 ;copy inst to D2
-00001170  C47C 0600                213          AND.W  #%0011000000000,D2 ;mask word for size
-00001174  0C42 0000                214          CMPI.W #0,D2 ;0 is the only non valid size
-00001178  6700 FF38                215          BEQ falsePositive ; zero is not valid
-0000117C                           216  
-0000117C  43F9 0000187F            217          LEA     negMessage,A1  ;move string for NEG info
-00001182  103C 000E                218          MOVE.B  #14,D0        ;set for task to display null terminated 
-00001186                           219                                ;string without CR, LF
-00001186  4E4F                     220          TRAP    #15
-00001188                           221          
-00001188  3401                     222          MOVE.W D1,D2
-0000118A  C47C 003F                223          AND #%000000000111111,D2
-0000118E  1A02                     224          MOVE.B D2,D5
-00001190                           225          
-00001190  6100 0384                226          BSR     Effective_Address
-00001194                           227          
-00001194                           228                
-00001194                           229          
-00001194                           230  NEGdone:
-00001194                           231  
-00001194  43F9 00001862            232          LEA     clearLine,A1  ;move string for a CR and LF
-0000119A  103C 000E                233          MOVE.B  #14,D0        ;set for task to display null terminated 
-0000119E                           234                                ;string without CR, LF
-0000119E  4E4F                     235          TRAP    #15
-000011A0  7000                     236          MOVEQ.L #0,D0
-000011A2  4E75                     237          RTS
-000011A4                           238          
-000011A4= 10 38 39 00              239  JsrEA        DC.B %010000, %111000, %111001,0
-000011A8= 38 3F 3F 00              240  JsrEAmasks   DC.B %111000, %111111, %111111,0
-000011AC                           241     
-000011AC                           242  JSR:            
-000011AC                           243       
-000011AC  7000                     244          MOVEQ.L #0, D0 ;clear D0
-000011AE                           245          
-000011AE                           246  validJsrModes:
-000011AE                           247          
-000011AE  43F8 11A8                248          LEA JsrEAmasks,A1 ;load the list of masks
-000011B2  D3C0                     249          ADDA.L D0,A1 ;displace to a specific mask
-000011B4  1A11                     250          MOVE.B (A1),D5 ;move the mask to D5
-000011B6                           251          
-000011B6  0C05 0000                252          CMPI.B #0,D5 ;check if the mask is 0
-000011BA  6700 FEF6                253          BEQ falsePositive ;branch if it is
-000011BE                           254          
-000011BE  1401                     255          MOVE.B D1,D2 ;copy instruction to D2
-000011C0  C405                     256          AND.B D5,D2  ;mask D2
-000011C2  43F8 11A4                257          LEA JsrEA,A1 ;load the list of valid modes
-000011C6  D3C0                     258          ADDA.L D0,A1 ;displace to a specific mode
-000011C8  1811                     259          MOVE.B (A1),D4 ;move mode to D4
-000011CA  B404                     260          CMP.B D4,D2 ;compare mode to masked value
-000011CC  6700 0006                261          BEQ JsrBody ;if its match, its a valid mode and we can procede
-000011D0                           262          
-000011D0  5280                     263          ADDQ.L #1,D0 ;add one to displacement
-000011D2  60DA                     264          BRA validJsrModes ;check for next mode
-000011D4                           265          
-000011D4                           266  JsrBody:
-000011D4                           267  
-000011D4                           268  
-000011D4  43F9 00001865            269          LEA     jsrMessage,A1  ;move string for NEG info
-000011DA  103C 000E                270          MOVE.B  #14,D0        ;set for task to display null terminated 
-000011DE                           271                                ;string without CR, LF
-000011DE  4E4F                     272          TRAP    #15
-000011E0                           273          
-000011E0  3401                     274          MOVE.W D1,D2
-000011E2  C47C 003F                275          AND #%000000000111111,D2
-000011E6  1A02                     276          MOVE.B D2,D5
-000011E8                           277          
-000011E8  6100 032C                278          BSR     Effective_Address
-000011EC                           279          
-000011EC                           280                
+00001004                            37          
+00001004                            38  *.............................................................................
+00001004                            39  * Debug Mode - Comment out when done
+00001004  267C 000010BE             40          MOVE.L      #snippet,A3
+0000100A  287C 000010E0             41          MOVE.L      #snippetEnd,A4
+00001010  6000 0012                 42          BRA         main_Loop
+00001014                            43  * Debug Mode - Comment out when done
+00001014                            44  *.............................................................................        
+00001014                            45          
+00001014                            46  prompt_user:
+00001014                            47  
+00001014  6100 039A                 48          BSR         begin_address
+00001018  B67C FFFF                 49          CMP.W       #-1,D3              ;Did the choose to exit, or error occur?
+0000101C  6700 038E                 50          BEQ         fin                 ;Yes, then exit
+00001020                            51          
+00001020  6000 0002                 52          BRA         main_Loop
+00001024                            53                  
+00001024                            54  ******************************************************************************
+00001024                            55  *                   Begin processing OP Codes
+00001024                            56  ******************************************************************************
+00001024                            57   
+00001024                            58  main_Loop:
+00001024                            59  
+00001024  B9CB                      60          CMPA.L A3,A4 ;check end of prog
+00001026  6700 0384                 61          BEQ fin
+0000102A                            62          
+0000102A  3213                      63          MOVE.W (A3),D1 ;copy word from other prog to analyze as instruction
+0000102C                            64          
+0000102C  7600                      65          MOVEQ.L #0,D3
+0000102E                            66          
+0000102E                            67          ***things to save A3,A4,D1(?)***
+0000102E  48E7 0018                 68          MOVEM.L A3-A4,-(SP)
+00001032  6100 000C                 69          BSR checkOPcode
+00001036  4CDF 1800                 70          MOVEM.L (SP)+,A3-A4
+0000103A  D7C7                      71          ADDA.L  D7,A3 ;look past data that was part of the instruction
+0000103C                            72          
+0000103C  548B                      73          ADDQ.L  #word,A3
+0000103E  60E4                      74          BRA     main_Loop 
+00001040                            75          
+00001040                            76  checkOPcode:
+00001040                            77  
+00001040                            78  
+00001040  7E00                      79          MOVEQ.L #0,D7
+00001042                            80          
+00001042  41F9 00001086             81          LEA     instOPList,A0 ;get instruction signitrue list in A0
+00001048  D1C3                      82          ADDA.L  D3,A0 ;get correct sig         
+0000104A                            83          
+0000104A  43F9 00001094             84          LEA     instMaskList,A1 ;get instruction mask in A1
+00001050  D3C3                      85          ADDA.L  D3,A1  ;get correct mast
+00001052                            86          
+00001052  3401                      87          MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
+00001054                            88          
+00001054  C451                      89          AND.W   (A1),D2 ;mask instruction
+00001056                            90          
+00001056                            91          
+00001056                            92          
+00001056                            93          
+00001056  B450                      94          CMP.W   (A0),D2 ;compare to sig
+00001058  6700 000C                 95          BEQ     match ;if sig matches branch
+0000105C  5483                      96          ADDQ.L  #word,D3 ;add to D3 to check for next instruction
+0000105E  60E0                      97          BRA checkOPcode
+00001060                            98          
+00001060                            99  falsePositive:
+00001060                           100          
+00001060  103C 00FF                101          MOVE.B #-1,D0
+00001064  4E75                     102          RTS
+00001066                           103  
+00001066                           104  match:
+00001066                           105          
+00001066  43F9 000010A2            106          LEA     instLabelList,A1 ;get instruction code label
+0000106C  D3C3                     107          ADDA.L  D3,A1 ;get correct label
+0000106E  D3C3                     108          ADDA.L  D3,A1
+00001070  5483                     109          ADDQ.L  #word,D3 ;add to D3 incase false positive
+00001072  2251                     110          MOVEA.L (A1),A1
+00001074  48E7 1000                111          MOVEM.L D3,-(SP) ; save D3
+00001078  4E91                     112          JSR     (A1)
+0000107A  4CDF 0008                113          MOVEM.L (SP)+,D3 ;restore D3
+0000107E  B03C 00FF                114          CMP.B   #-1,D0
+00001082  67BC                     115          BEQ     checkOPcode
+00001084  4E75                     116          RTS
+00001086                           117          
+00001086                           118  
+00001086= 4E80 4E75 4400 4...      119  instOPList DC.W jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+00001094= FFC0 FFFF FF00 F...      120  instMaskList DC.W jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+000010A2= 0000115A 000011BA ...    121  instLabelList DC.L JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+000010BE                           122  
+000010BE                           123  snippet:
+000010BE  4E71                     124           NOP
+000010C0  60FC                     125           BRA snippet
+000010C2  6000 FF3A                126           BRA FarLabel
+000010C6  67F6                     127           BEQ snippet
+000010C8  6E00 002A                128           BGT NEG
+000010CC  61F0                     129           BSR snippet
+000010CE  4441                     130           NEG D1
+000010D0  3239 00008500            131           MOVE.W $8500,D1
+000010D6  0645 001E                132           ADDI.W #30,D5
+000010DA  4E75                     133           RTS
+000010DC  4EB8 0054                134           jsr $54
+000010E0                           135           
+000010E0                           136  snippetEnd:
+000010E0  FFFF FFFF                137           SIMHALT
+000010E4                           138          
+000010E4= 00 10 18 20 28 38 ...    139  NegEA        DC.B %000000,%010000, %011000, %100000, %101000, %111000, %111001,0
+000010EC= 38 38 38 38 38 3F ...    140  NegEAmasks   DC.B %111000,%111000, %111000, %111000, %111000, %111111, %111111,0
+000010F4                           141     
+000010F4                           142  NEG:            
+000010F4                           143       
+000010F4  7000                     144          MOVEQ.L #0, D0 ;clear D0
+000010F6                           145          
+000010F6                           146  validNegModes:
+000010F6                           147          
+000010F6  43F8 10EC                148          LEA NegEAmasks,A1 ;load the list of masks
+000010FA  D3C0                     149          ADDA.L D0,A1 ;displace to a specific mask
+000010FC  1A11                     150          MOVE.B (A1),D5 ;move the mask to D5
+000010FE                           151          
+000010FE  0C05 0000                152          CMPI.B #0,D5 ;check if the mask is 0
+00001102  6700 FF5C                153          BEQ falsePositive ;branch if it is
+00001106                           154          
+00001106  1401                     155          MOVE.B D1,D2 ;copy instruction to D2
+00001108  C405                     156          AND.B D5,D2  ;mask D2
+0000110A  43F8 10E4                157          LEA NegEA,A1 ;load the list of valid modes
+0000110E  D3C0                     158          ADDA.L D0,A1 ;displace to a specific mode
+00001110  1811                     159          MOVE.B (A1),D4 ;move mode to D4
+00001112  B404                     160          CMP.B D4,D2 ;compare mode to masked value
+00001114  6700 0006                161          BEQ NegBody ;if its match, its a valid mode and we can procede
+00001118                           162          
+00001118  5280                     163          ADDQ.L #1,D0 ;add one to displacement
+0000111A  60DA                     164          BRA validNegModes ;check for next mode
+0000111C                           165          
+0000111C                           166  NegBody:
+0000111C                           167  
+0000111C                           168  
+0000111C  3401                     169          MOVE.W  D1,D2 ;copy inst to D2
+0000111E  C47C 0600                170          AND.W  #%0011000000000,D2 ;mask word for size
+00001122  0C42 0000                171          CMPI.W #0,D2 ;0 is the only non valid size
+00001126  6700 FF38                172          BEQ falsePositive ; zero is not valid
+0000112A                           173  
+0000112A  43F9 0000189F            174          LEA     negMessage,A1  ;move string for NEG info
+00001130  103C 000E                175          MOVE.B  #14,D0        ;set for task to display null terminated 
+00001134                           176                                ;string without CR, LF
+00001134  4E4F                     177          TRAP    #15
+00001136                           178          
+00001136  3401                     179          MOVE.W D1,D2
+00001138  C47C 003F                180          AND #%000000000111111,D2
+0000113C  1A02                     181          MOVE.B D2,D5
+0000113E                           182          
+0000113E  6100 03F6                183          BSR     Effective_Address
+00001142                           184          
+00001142                           185                
+00001142                           186          
+00001142                           187  NEGdone:
+00001142                           188  
+00001142  43F9 00001882            189          LEA     clearLine,A1  ;move string for a CR and LF
+00001148  103C 000E                190          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000114C                           191                                ;string without CR, LF
+0000114C  4E4F                     192          TRAP    #15
+0000114E  7000                     193          MOVEQ.L #0,D0
+00001150  4E75                     194          RTS
+00001152                           195          
+00001152= 10 38 39 00              196  JsrEA        DC.B %010000, %111000, %111001,0
+00001156= 38 3F 3F 00              197  JsrEAmasks   DC.B %111000, %111111, %111111,0
+0000115A                           198     
+0000115A                           199  JSR:            
+0000115A                           200       
+0000115A  7000                     201          MOVEQ.L #0, D0 ;clear D0
+0000115C                           202          
+0000115C                           203  validJsrModes:
+0000115C                           204          
+0000115C  43F8 1156                205          LEA JsrEAmasks,A1 ;load the list of masks
+00001160  D3C0                     206          ADDA.L D0,A1 ;displace to a specific mask
+00001162  1A11                     207          MOVE.B (A1),D5 ;move the mask to D5
+00001164                           208          
+00001164  0C05 0000                209          CMPI.B #0,D5 ;check if the mask is 0
+00001168  6700 FEF6                210          BEQ falsePositive ;branch if it is
+0000116C                           211          
+0000116C  1401                     212          MOVE.B D1,D2 ;copy instruction to D2
+0000116E  C405                     213          AND.B D5,D2  ;mask D2
+00001170  43F8 1152                214          LEA JsrEA,A1 ;load the list of valid modes
+00001174  D3C0                     215          ADDA.L D0,A1 ;displace to a specific mode
+00001176  1811                     216          MOVE.B (A1),D4 ;move mode to D4
+00001178  B404                     217          CMP.B D4,D2 ;compare mode to masked value
+0000117A  6700 0006                218          BEQ JsrBody ;if its match, its a valid mode and we can procede
+0000117E                           219          
+0000117E  5280                     220          ADDQ.L #1,D0 ;add one to displacement
+00001180  60DA                     221          BRA validJsrModes ;check for next mode
+00001182                           222          
+00001182                           223  JsrBody:
+00001182                           224  
+00001182                           225  
+00001182  43F9 00001885            226          LEA     jsrMessage,A1  ;move string for NEG info
+00001188  103C 000E                227          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000118C                           228                                ;string without CR, LF
+0000118C  4E4F                     229          TRAP    #15
+0000118E                           230          
+0000118E  3401                     231          MOVE.W D1,D2 ;copy inst to D2
+00001190  C47C 003F                232          AND #%000000000111111,D2 ;and out everything but modes and regs
+00001194  1A02                     233          MOVE.B D2,D5 ; copy to D5 for following BSR
+00001196                           234          
+00001196  6100 039E                235          BSR     Effective_Address
+0000119A                           236          
+0000119A                           237                
+0000119A                           238          
+0000119A                           239  Jsrdone:
+0000119A                           240  
+0000119A  43F9 00001882            241          LEA     clearLine,A1  ;move string for a CR and LF
+000011A0  103C 000E                242          MOVE.B  #14,D0        ;set for task to display null terminated 
+000011A4                           243                                ;string without CR, LF
+000011A4  4E4F                     244          TRAP    #15
+000011A6  7000                     245          MOVEQ.L #0,D0
+000011A8  4E75                     246          RTS
+000011AA                           247  
+000011AA                           248  
+000011AA                           249          
+000011AA                           250  NOP:
+000011AA                           251  
+000011AA  43F9 00001890            252          LEA     nopMessage,A1 ;move string for NOP info
+000011B0  103C 000D                253          MOVE.B  #13,D0        ;set for task to display null terminated 
+000011B4                           254                                ;string with CR, LF
+000011B4  4E4F                     255          TRAP    #15
+000011B6                           256          
+000011B6  7000                     257          MOVEQ.L #0,D0
+000011B8  4E75                     258          RTS
+000011BA                           259          
+000011BA                           260  RTS:
+000011BA                           261          
+000011BA  43F9 0000188B            262          LEA     rtsMessage,A1  ;move string for rts info
+000011C0  103C 000D                263          MOVE.B  #13,D0        ;set for task to display null terminated 
+000011C4                           264                                ;string with CR, LF
+000011C4  4E4F                     265          TRAP    #15  
+000011C6                           266     
+000011C6  7000                     267          MOVEQ.L #0,D0
+000011C8  4E75                     268          RTS   
+000011CA                           269  
+000011CA= 3C 08 00 10 18 20 ...    270  moveSourceEA        DC.B %111100,%001000,%000000,%010000,%011000,%100000,%111000,%111001,0
+000011D3= 3F 38 38 38 38 38 ...    271  moveSourceEAmasks   DC.B %111111,%111000,%111000,%111000,%111000,%111000,%111111,%111111,0
+000011DC                           272  
+000011DC= 00 10 18 20 38 39 00     273  moveDestEA        DC.B %000000,%010000,%011000,%100000,%111000,%111001,0
+000011E3= 38 38 38 38 3F 3F 00     274  moveDestEAmasks   DC.B %111000,%111000,%111000,%111000,%111111,%111111,0        
+000011EA                           275  
+000011EA                           276  MOVE:
+000011EA                           277          
+000011EA                           278  
+000011EA                           279          
+000011EA  7000                     280          MOVEQ.L #0, D0 ;clear D0
 000011EC                           281          
-000011EC                           282  Jsrdone:
-000011EC                           283  
-000011EC  43F9 00001862            284          LEA     clearLine,A1  ;move string for a CR and LF
-000011F2  103C 000E                285          MOVE.B  #14,D0        ;set for task to display null terminated 
-000011F6                           286                                ;string without CR, LF
-000011F6  4E4F                     287          TRAP    #15
-000011F8  7000                     288          MOVEQ.L #0,D0
-000011FA  4E75                     289          RTS
-000011FC                           290  
-000011FC                           291  
-000011FC                           292          
-000011FC                           293  NOP:
-000011FC                           294  
-000011FC  43F9 00001870            295          LEA     nopMessage,A1 ;move string for NOP info
-00001202  103C 000D                296          MOVE.B  #13,D0        ;set for task to display null terminated 
-00001206                           297                                ;string with CR, LF
-00001206  4E4F                     298          TRAP    #15
-00001208                           299          
-00001208  7000                     300          MOVEQ.L #0,D0
-0000120A  4E75                     301          RTS
-0000120C                           302          
-0000120C                           303  RTS:
-0000120C                           304          
-0000120C  43F9 0000186B            305          LEA     rtsMessage,A1  ;move string for rts info
-00001212  103C 000D                306          MOVE.B  #13,D0        ;set for task to display null terminated 
-00001216                           307                                ;string with CR, LF
-00001216  4E4F                     308          TRAP    #15  
-00001218                           309     
-00001218  7000                     310          MOVEQ.L #0,D0
-0000121A  4E75                     311          RTS   
-0000121C                           312  
-0000121C= 3C 08 00 10 18 20 ...    313  moveSourceEA        DC.B %111100,%001000,%000000,%010000,%011000,%100000,%111000,%111001,0
-00001225= 3F 38 38 38 38 38 ...    314  moveSourceEAmasks   DC.B %111111,%111000,%111000,%111000,%111000,%111000,%111111,%111111,0
-0000122E                           315  
-0000122E= 00 10 18 20 38 39 00     316  moveDestEA        DC.B %000000,%010000,%011000,%100000,%111000,%111001,0
-00001235= 38 38 38 38 3F 3F 00     317  moveDestEAmasks   DC.B %111000,%111000,%111000,%111000,%111111,%111111,0        
-0000123C                           318  
-0000123C                           319  MOVE:
-0000123C                           320          
-0000123C                           321  
-0000123C                           322          
-0000123C  7000                     323          MOVEQ.L #0, D0 ;clear D0
-0000123E                           324          
-0000123E                           325  validMoveSourceModes:
-0000123E                           326          
-0000123E  43F8 1225                327          LEA moveSourceEAmasks,A1 ;load the list of masks
-00001242  D3C0                     328          ADDA.L D0,A1 ;displace to a specific mask
-00001244  1A11                     329          MOVE.B (A1),D5 ;move the mask to D5
-00001246                           330          
-00001246  0C05 0000                331          CMPI.B #0,D5 ;check if the mask is 0
-0000124A  6700 FE66                332          BEQ falsePositive ;branch if it is
-0000124E                           333          
-0000124E  1401                     334          MOVE.B D1,D2 ;copy instruction to D2
-00001250  C405                     335          AND.B D5,D2  ;mask D2
-00001252                           336          
-00001252  43F8 121C                337          LEA moveSourceEA,A1 ;load the list of valid modes
-00001256  D3C0                     338          ADDA.L D0,A1 ;displace to a specific mode
-00001258  1811                     339          MOVE.B (A1),D4 ;move mode to D4
-0000125A  B404                     340          CMP.B D4,D2 ;compare mode to masked value
-0000125C  6700 0006                341          BEQ  checkMoveDest ;if its match, its a valid mode and we can procede
-00001260                           342          
-00001260  5280                     343          ADDQ.L #1,D0 ;add one to displacement
-00001262  60DA                     344          BRA validMoveSourceModes ;check for next mode
-00001264                           345          
-00001264                           346  checkMoveDest:
-00001264  7000                     347          MOVEQ.L #0, D0 ;clear D0
-00001266                           348          
-00001266                           349  validMoveDestModes:
-00001266                           350          
-00001266  43F8 1235                351          LEA moveDestEAmasks,A1 ;load the list of masks
-0000126A  D3C0                     352          ADDA.L D0,A1 ;displace to a specific mask
-0000126C  1A11                     353          MOVE.B (A1),D5 ;move the mask to D5
-0000126E                           354          
-0000126E  0C05 0000                355          CMPI.B #0,D5 ;check if the mask is 0
-00001272  6700 FE3E                356          BEQ falsePositive ;branch if it is
-00001276                           357          
-00001276  3401                     358          MOVE.W D1,D2 ;copy instruction to D2
-00001278  EA4A                     359          LSR.W #5,D2  ;move mode
-0000127A  6100 040E                360          BSR switchModeAndReg ;switch register and mode
-0000127E  C405                     361          AND.B D5,D2  ;mask D2
-00001280                           362          
-00001280  43F8 122E                363          LEA moveDestEA,A1 ;load the list of valid modes
-00001284  D3C0                     364          ADDA.L D0,A1 ;displace to a specific mode
-00001286  1811                     365          MOVE.B (A1),D4 ;move mode to D4
-00001288  B404                     366          CMP.B D4,D2 ;compare mode to masked value
-0000128A  6700 0006                367          BEQ moveBody ;if its match, its a valid mode and we can procede
-0000128E                           368          
-0000128E  5280                     369          ADDQ.L #1,D0 ;add one to displacement
-00001290  60D4                     370          BRA validMoveDestModes ;check for next mode
-00001292                           371          
-00001292                           372  moveBody
-00001292  3401                     373          MOVE.W  D1,D2 ;copy inst to D2
-00001294  C47C 0600                374          AND.W  #%0011000000000,D2 ;mask word for size
-00001298  0C42 0000                375          CMPI.W #0,D2 ;0 is the only non valid size
-0000129C  6700 FE14                376          BEQ falsePositive ; if zero, this is not move
-000012A0                           377  
-000012A0  3401                     378          MOVE.W  D1,D2
-000012A2  EC4A                     379          LSR     #6,D2
-000012A4  C43C 0007                380          AND.B   #%00000111,D2
-000012A8                           381          
-000012A8  0C02 0001                382          CMPI.B  #1,D2
-000012AC  6700 0030                383          BEQ     MOVEA
-000012B0                           384          
-000012B0  3401                     385          MOVE.W  D1,D2 ;check source mode
-000012B2  E64A                     386          LSR     #3,D2   
-000012B4  C47C 0007                387          AND.W   #$0007,D2
-000012B8                           388          
-000012B8  3401                     389          MOVE.W  D1,D2 ;check source reg
-000012BA  C47C 0007                390          AND.W   #$0007,D2
-000012BE                           391          
-000012BE  43F9 00001876            392          LEA     moveMessage,A1  ;move string for MOVE
-000012C4  103C 000E                393          MOVE.B  #14,D0        ;set for task to display null terminated 
-000012C8                           394                                ;string with CR, LF
-000012C8  4E4F                     395          TRAP    #15
-000012CA                           396          
-000012CA  43F9 00001862            397          LEA     clearLine,A1  ;move string for a CR and LF
-000012D0  103C 000E                398          MOVE.B  #14,D0        ;set for task to display null terminated 
-000012D4                           399                                ;string without CR, LF
-000012D4  4E4F                     400          TRAP    #15
-000012D6                           401  
-000012D6  7000                     402          MOVEQ.L #0,D0
-000012D8  4E75                     403          RTS
-000012DA                           404          
-000012DA= 08 00                    405  moveADestEA        DC.B %001000,0
-000012DC= 38 00                    406  moveADestEAmasks   DC.B %111000,0
-000012DE                           407          
-000012DE                           408  MOVEA:
-000012DE                           409  
-000012DE  7000                     410          MOVEQ.L #0, D0 ;clear D0
-000012E0                           411          
-000012E0                           412  validMoveASourceModes:
-000012E0                           413          
-000012E0  43F8 1225                414          LEA moveSourceEAmasks,A1 ;load the list of masks
-000012E4  D3C0                     415          ADDA.L D0,A1 ;displace to a specific mask
-000012E6  1A11                     416          MOVE.B (A1),D5 ;move the mask to D5
-000012E8                           417          
-000012E8  0C05 0000                418          CMPI.B #0,D5 ;check if the mask is 0
-000012EC  6700 FDC4                419          BEQ falsePositive ;branch if it is
-000012F0                           420          
-000012F0  1401                     421          MOVE.B D1,D2 ;copy instruction to D2
-000012F2  C405                     422          AND.B D5,D2  ;mask D2
-000012F4                           423          
-000012F4  43F8 121C                424          LEA moveSourceEA,A1 ;load the list of valid modes
-000012F8  D3C0                     425          ADDA.L D0,A1 ;displace to a specific mode
-000012FA  1811                     426          MOVE.B (A1),D4 ;move mode to D4
-000012FC  B404                     427          CMP.B D4,D2 ;compare mode to masked value
-000012FE  6700 0006                428          BEQ  checkMoveADest ;if its match, its a valid mode and we can procede
-00001302                           429          
-00001302  5280                     430          ADDQ.L #1,D0 ;add one to displacement
-00001304  60DA                     431          BRA validMoveASourceModes ;check for next mode
-00001306                           432          
-00001306                           433  checkMoveADest:
-00001306  7000                     434          MOVEQ.L #0, D0 ;clear D0
-00001308                           435  validMoveADestModes:
-00001308                           436          
-00001308  43F8 12DC                437          LEA moveADestEAmasks,A1 ;load the list of masks
-0000130C  D3C0                     438          ADDA.L D0,A1 ;displace to a specific mask
-0000130E  1A11                     439          MOVE.B (A1),D5 ;move the mask to D5
+000011EC                           282  validMoveSourceModes:
+000011EC                           283          
+000011EC  43F8 11D3                284          LEA moveSourceEAmasks,A1 ;load the list of masks
+000011F0  D3C0                     285          ADDA.L D0,A1 ;displace to a specific mask
+000011F2  1A11                     286          MOVE.B (A1),D5 ;move the mask to D5
+000011F4                           287          
+000011F4  0C05 0000                288          CMPI.B #0,D5 ;check if the mask is 0
+000011F8  6700 FE66                289          BEQ falsePositive ;branch if it is
+000011FC                           290          
+000011FC  1401                     291          MOVE.B D1,D2 ;copy instruction to D2
+000011FE  C405                     292          AND.B D5,D2  ;mask D2
+00001200                           293          
+00001200  43F8 11CA                294          LEA moveSourceEA,A1 ;load the list of valid modes
+00001204  D3C0                     295          ADDA.L D0,A1 ;displace to a specific mode
+00001206  1811                     296          MOVE.B (A1),D4 ;move mode to D4
+00001208  B404                     297          CMP.B D4,D2 ;compare mode to masked value
+0000120A  6700 0006                298          BEQ  checkMoveDest ;if its match, its a valid mode and we can procede
+0000120E                           299          
+0000120E  5280                     300          ADDQ.L #1,D0 ;add one to displacement
+00001210  60DA                     301          BRA validMoveSourceModes ;check for next mode
+00001212                           302          
+00001212                           303  checkMoveDest:
+00001212  7000                     304          MOVEQ.L #0, D0 ;clear D0
+00001214                           305          
+00001214                           306  validMoveDestModes:
+00001214                           307          
+00001214  43F8 11E3                308          LEA moveDestEAmasks,A1 ;load the list of masks
+00001218  D3C0                     309          ADDA.L D0,A1 ;displace to a specific mask
+0000121A  1A11                     310          MOVE.B (A1),D5 ;move the mask to D5
+0000121C                           311          
+0000121C  0C05 0000                312          CMPI.B #0,D5 ;check if the mask is 0
+00001220  6700 FE3E                313          BEQ falsePositive ;branch if it is
+00001224                           314          
+00001224  3401                     315          MOVE.W D1,D2 ;copy instruction to D2
+00001226  EA4A                     316          LSR.W #5,D2  ;move mode
+00001228  6100 0480                317          BSR switchModeAndReg ;switch register and mode
+0000122C  C405                     318          AND.B D5,D2  ;mask D2
+0000122E                           319          
+0000122E  43F8 11DC                320          LEA moveDestEA,A1 ;load the list of valid modes
+00001232  D3C0                     321          ADDA.L D0,A1 ;displace to a specific mode
+00001234  1811                     322          MOVE.B (A1),D4 ;move mode to D4
+00001236  B404                     323          CMP.B D4,D2 ;compare mode to masked value
+00001238  6700 0006                324          BEQ moveBody ;if its match, its a valid mode and we can procede
+0000123C                           325          
+0000123C  5280                     326          ADDQ.L #1,D0 ;add one to displacement
+0000123E  60D4                     327          BRA validMoveDestModes ;check for next mode
+00001240                           328          
+00001240                           329  moveBody
+00001240  3401                     330          MOVE.W  D1,D2 ;copy inst to D2
+00001242  C47C 3000                331          AND.W  #%0011000000000000,D2 ;mask word for size
+00001246  0C42 0000                332          CMPI.W #0,D2 ;0 is the only non valid size
+0000124A  6700 FE14                333          BEQ falsePositive ; if zero, this is not move
+0000124E                           334  
+0000124E  43F9 00001896            335          LEA     moveMessage,A1  ;move string for MOVE
+00001254  103C 000E                336          MOVE.B  #14,D0        ;set for task to display null terminated 
+00001258                           337                                ;string with CR, LF
+00001258  4E4F                     338          TRAP    #15
+0000125A                           339          
+0000125A                           340          
+0000125A  3401                     341          MOVE.W  D1,D2 ;check source mode
+0000125C  C43C 003F                342          AND.B   #%00111111,D2
+00001260  1A02                     343          MOVE.B  D2,D5
+00001262  6100 02D2                344          BSR     Effective_Address
+00001266                           345          
+00001266                           346          ;print separator
+00001266                           347          
+00001266  3401                     348          MOVE.W  D1,D2 ;check dest mode
+00001268  EC4A                     349          LSR.W   #6,D2
+0000126A  C43C 003F                350          AND.B   #%00111111,D2
+0000126E  1A02                     351          MOVE.B  D2,D5
+00001270  6100 02C4                352          BSR     Effective_Address
+00001274                           353          
+00001274                           354          
+00001274                           355          
+00001274  43F9 00001882            356          LEA     clearLine,A1  ;move string for a CR and LF
+0000127A  103C 000E                357          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000127E                           358                                ;string without CR, LF
+0000127E  4E4F                     359          TRAP    #15
+00001280                           360  
+00001280  7000                     361          MOVEQ.L #0,D0
+00001282  4E75                     362          RTS
+00001284                           363          
+00001284= 08 00                    364  moveADestEA        DC.B %001000,0
+00001286= 38 00                    365  moveADestEAmasks   DC.B %111000,0
+00001288                           366          
+00001288                           367  MOVEA:
+00001288                           368  
+00001288  7000                     369          MOVEQ.L #0, D0 ;clear D0
+0000128A                           370          
+0000128A                           371  validMoveASourceModes:
+0000128A                           372          
+0000128A  43F8 11D3                373          LEA moveSourceEAmasks,A1 ;load the list of masks
+0000128E  D3C0                     374          ADDA.L D0,A1 ;displace to a specific mask
+00001290  1A11                     375          MOVE.B (A1),D5 ;move the mask to D5
+00001292                           376          
+00001292  0C05 0000                377          CMPI.B #0,D5 ;check if the mask is 0
+00001296  6700 FDC8                378          BEQ falsePositive ;branch if it is
+0000129A                           379          
+0000129A  1401                     380          MOVE.B D1,D2 ;copy instruction to D2
+0000129C  C405                     381          AND.B D5,D2  ;mask D2
+0000129E                           382          
+0000129E  43F8 11CA                383          LEA moveSourceEA,A1 ;load the list of valid modes
+000012A2  D3C0                     384          ADDA.L D0,A1 ;displace to a specific mode
+000012A4  1811                     385          MOVE.B (A1),D4 ;move mode to D4
+000012A6  B404                     386          CMP.B D4,D2 ;compare mode to masked value
+000012A8  6700 0006                387          BEQ  checkMoveADest ;if its match, its a valid mode and we can procede
+000012AC                           388          
+000012AC  5280                     389          ADDQ.L #1,D0 ;add one to displacement
+000012AE  60DA                     390          BRA validMoveASourceModes ;check for next mode
+000012B0                           391          
+000012B0                           392  checkMoveADest:
+000012B0  7000                     393          MOVEQ.L #0, D0 ;clear D0
+000012B2                           394  validMoveADestModes:
+000012B2                           395          
+000012B2  43F8 1286                396          LEA moveADestEAmasks,A1 ;load the list of masks
+000012B6  D3C0                     397          ADDA.L D0,A1 ;displace to a specific mask
+000012B8  1A11                     398          MOVE.B (A1),D5 ;move the mask to D5
+000012BA                           399          
+000012BA  0C05 0000                400          CMPI.B #0,D5 ;check if the mask is 0
+000012BE  6700 FDA0                401          BEQ falsePositive ;branch if it is
+000012C2                           402          
+000012C2  3401                     403          MOVE.W D1,D2 ;copy instruction to D2
+000012C4  EA4A                     404          LSR.W #5,D2  ;move mode
+000012C6  6100 03E2                405          BSR switchModeAndReg ;switch register and mode
+000012CA  C405                     406          AND.B D5,D2  ;mask D2
+000012CC                           407          
+000012CC  43F8 1284                408          LEA moveADestEA,A1 ;load the list of valid modes
+000012D0  D3C0                     409          ADDA.L D0,A1 ;displace to a specific mode
+000012D2  1811                     410          MOVE.B (A1),D4 ;move mode to D4
+000012D4  B404                     411          CMP.B D4,D2 ;compare mode to masked value
+000012D6  6700 0006                412          BEQ moveABody ;if its match, its a valid mode and we can procede
+000012DA                           413          
+000012DA  5280                     414          ADDQ.L #1,D0 ;add one to displacement
+000012DC  60D4                     415          BRA validMoveADestModes ;check for next mode
+000012DE                           416  moveABody:
+000012DE  3401                     417          MOVE.W  D1,D2 ;copy inst to D2
+000012E0  C47C 3000                418          AND.W  #%0011000000000000,D2 ;mask word for size
+000012E4  0C42 0000                419          CMPI.W #0,D2 ;0 is the non valid size
+000012E8  6700 FD76                420          BEQ falsePositive ; if zero, this is not move
+000012EC  0C42 1000                421          CMPI.W #%0001000000000000,D2
+000012F0  6700 FD6E                422          BEQ falsePositive ; if byte, this is not movea
+000012F4                           423  
+000012F4                           424  
+000012F4  43F9 000018AC            425          LEA     moveAMessage,A1  ;move string for MOVE
+000012FA  103C 000D                426          MOVE.B  #13,D0        ;set for task to display null terminated 
+000012FE                           427                                ;string with CR, LF
+000012FE  4E4F                     428          TRAP    #15
+00001300                           429  
+00001300  7000                     430          MOVEQ.L #0,D0
+00001302  4E75                     431          RTS
+00001304                           432  
+00001304                           433             
+00001304                           434  Bcc:
+00001304                           435  
+00001304  43F9 0000189D            436          LEA     bccMessage,A1  ;move string for BRA info
+0000130A  103C 000E                437          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000130E                           438                                ;string without CR, LF
+0000130E  4E4F                     439          TRAP    #15
 00001310                           440          
-00001310  0C05 0000                441          CMPI.B #0,D5 ;check if the mask is 0
-00001314  6700 FD9C                442          BEQ falsePositive ;branch if it is
-00001318                           443          
-00001318  3401                     444          MOVE.W D1,D2 ;copy instruction to D2
-0000131A  EA4A                     445          LSR.W #5,D2  ;move mode
-0000131C  6100 036C                446          BSR switchModeAndReg ;switch register and mode
-00001320  C405                     447          AND.B D5,D2  ;mask D2
-00001322                           448          
-00001322  43F8 12DA                449          LEA moveADestEA,A1 ;load the list of valid modes
-00001326  D3C0                     450          ADDA.L D0,A1 ;displace to a specific mode
-00001328  1811                     451          MOVE.B (A1),D4 ;move mode to D4
-0000132A  B404                     452          CMP.B D4,D2 ;compare mode to masked value
-0000132C  6700 0006                453          BEQ moveABody ;if its match, its a valid mode and we can procede
-00001330                           454          
-00001330  5280                     455          ADDQ.L #1,D0 ;add one to displacement
-00001332  60D4                     456          BRA validMoveADestModes ;check for next mode
-00001334                           457  moveABody:
-00001334  3401                     458          MOVE.W  D1,D2 ;copy inst to D2
-00001336  C47C 0600                459          AND.W  #%0011000000000,D2 ;mask word for size
-0000133A  0C42 0000                460          CMPI.W #0,D2 ;0 is the non valid size
-0000133E  6700 FD72                461          BEQ falsePositive ; if zero, this is not move
-00001342  0C42 0200                462          CMPI.W #%0001000000000,D2
-00001346  6700 FD6A                463          BEQ falsePositive ; if byte, this is not movea
-0000134A                           464  
-0000134A                           465  
-0000134A  43F9 0000188C            466          LEA     moveAMessage,A1  ;move string for MOVE
-00001350  103C 000D                467          MOVE.B  #13,D0        ;set for task to display null terminated 
-00001354                           468                                ;string with CR, LF
-00001354  4E4F                     469          TRAP    #15
-00001356                           470  
-00001356  7000                     471          MOVEQ.L #0,D0
-00001358  4E75                     472          RTS
-0000135A                           473  
-0000135A                           474             
-0000135A                           475  Bcc:
-0000135A                           476  
-0000135A  43F9 0000187D            477          LEA     bccMessage,A1  ;move string for BRA info
-00001360  103C 000E                478          MOVE.B  #14,D0        ;set for task to display null terminated 
-00001364                           479                                ;string without CR, LF
-00001364  4E4F                     480          TRAP    #15
-00001366                           481          
-00001366  7000                     482          MOVEQ.L #0,D0 ;clear D0
-00001368  3401                     483          MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
-0000136A  E04A                     484          LSR.W   #8,D2
-0000136C  C47C 000F                485          AND.W   #$0F,D2 ;mask instruction
-00001370                           486          
-00001370                           487  checkCC:        
-00001370  41F9 000017E9            488          LEA     bccList,A0 ;get condition code signature list in A0
-00001376  D1C0                     489          ADDA.L  D0,A0 ;get correct sig         
-00001378  B410                     490          CMP.B   (A0),D2 ;compare to sig
-0000137A  6700 0006                491          BEQ     foundCC ;if sig matches branch
-0000137E  5200                     492          ADDQ.B  #byte,D0
-00001380  60EE                     493          BRA     checkCC
-00001382                           494  foundCC:
-00001382  43F9 000017FA            495          LEA     conditionCodeMessage,A1 ;get condition code message in A1
-00001388  C0FC 0004                496          MULU.W  #long,D0 ;adjust size of D0 for a long
-0000138C  D3C0                     497          ADDA.L  D0,A1 ;get correct message location
-0000138E  2251                     498          MOVEA.L (A1),A1 ;get correct message
-00001390                           499          
-00001390  103C 000E                500          MOVE.B  #14,D0        ;set for task to display null terminated 
-00001394                           501                                ;string without CR, LF
-00001394  4E4F                     502          TRAP    #15
-00001396                           503  
-00001396                           504          
-00001396                           505          
-00001396  548B                     506          ADDQ.L  #word,A3 ;move past instruction in case long displacement
-00001398  C27C 00FF                507          AND.W   #$00FF,D1   ;check for word sized displacement
-0000139C                           508          
-0000139C  B23C 0000                509          CMP.B   #$0,D1
-000013A0  6700 0010                510          BEQ     BccWord
-000013A4                           511          
-000013A4  B23C 00FF                512          CMP.B   #$FF,D1 check for long sized displacement
-000013A8  6700 0010                513          BEQ     BccLong
-000013AC                           514          
-000013AC                           515  BccByte:
-000013AC                           516          
-000013AC  7E00                     517          MOVEQ.L #0,D7 ;pass back no extra data followed
-000013AE  6000 0012                518          BRA     BccDone
-000013B2                           519  BccWord:
-000013B2  3213                     520          MOVE.W  (A3),D1
-000013B4                           521          
-000013B4  7E02                     522          MOVEQ.L #word,D7 ;pass back an extra word followed
-000013B6  6000 000A                523          BRA     BccDone
-000013BA                           524  BccLong:
-000013BA  2213                     525          MOVE.L  (A3),D1
-000013BC                           526          
-000013BC  7E04                     527          MOVEQ.L #long,D7 ;pass back an extra long followed
-000013BE  6000 0002                528          BRA     BccDone
-000013C2                           529  BccDone:
-000013C2                           530  
-000013C2  343C 0010                531          MOVE.W  #16,D2 ;put base in D2
-000013C6  303C 000F                532          MOVE.W  #15,D0  ;put task #15 in D0
-000013CA  4E4F                     533          TRAP    #15
-000013CC                           534          
-000013CC  43F9 00001862            535          LEA     clearLine,A1  ;move string for a CR and LF
-000013D2  103C 000E                536          MOVE.B  #14,D0        ;set for task to display null terminated 
-000013D6                           537                                ;string without CR, LF
-000013D6  4E4F                     538          TRAP    #15
-000013D8                           539  
-000013D8  7000                     540          MOVEQ.L #0,D0
-000013DA  4E75                     541          RTS
-000013DC                           542          
-000013DC                           543          
-000013DC                           544  unknownOpCode:
-000013DC  43F9 00001885            545          LEA     dataMessage,A1 ;move string for data info
-000013E2  103C 000E                546          MOVE.B  #14,D0        ;set for task to display null terminated 
-000013E6                           547                                ;string without CR, LF
-000013E6  4E4F                     548          TRAP    #15
-000013E8                           549          
-000013E8  143C 0010                550          MOVE.B  #16,D2        ;set for displaying a base16(hex) number
-000013EC  103C 000F                551          MOVE.B  #15,D0
-000013F0  4E4F                     552          TRAP    #15
-000013F2  43F9 00001862            553          LEA     clearLine,A1  ;move string for a CR and LF
-000013F8  103C 000E                554          MOVE.B  #14,D0        ;set for task to display null terminated 
-000013FC                           555                                ;string without CR, LF
-000013FC  4E4F                     556          TRAP    #15
-000013FE                           557          
-000013FE  7000                     558          MOVEQ.L #0,D0
-00001400  4E75                     559          RTS
-00001402                           560          
-00001402                           561  
-00001402                           562  
-00001402                           563          
-00001402                           564          
-00001402                           565  fin
-00001402                           566  
-00001402                           567          
-00001402                           568          
-00001402  FFFF FFFF                569          simhalt
-00001406                           570          
-00001406                           571  
-00001406                           572  *******************************************************************************
-00001406                           573  *                            SUB ROUTINES
-00001406                           574  *******************************************************************************
-00001406                           575  *==============================================================================
-00001406                           576  * enter_addr_edit_all - Enter address edit check to edit all errors  
-00001406                           577  *                       using multiple different error checking routines.
-00001406                           578  *
-00001406                           579  * Parameters -
-00001406                           580  *   Input   A1      The data that needs checked.
-00001406                           581  *   Input   D1      The number of characters input     
-00001406                           582  *   Output  D3      Returns '-1' when there is an error.
-00001406                           583  *==============================================================================
-00001406                           584  
-00001406                           585  enter_addr_edit_all
-00001406                           586  
-00001406                           587  *------------------------------------------------------------------------------
-00001406                           588  * Test for odd number of characters entered, not allowed
-00001406                           589  *------------------------------------------------------------------------------
-00001406                           590         
-00001406  6100 0024                591          BSR         ck_boundry          ;check if the input is on a odd / even boundry
-0000140A  B67C FFFF                592          CMP.W       #-1,D3              ;Is the address odd?
-0000140E  6700 001A                593          BEQ         enter_addr_edit_all_exit     ;No, return
-00001412                           594  
-00001412                           595  *------------------------------------------------------------------------------
-00001412                           596  * Ttest for character entered all being valid address characters
-00001412                           597  * Note: lower case a-f, gets converted to upper case A-F in D3
-00001412                           598  *------------------------------------------------------------------------------
-00001412                           599          
-00001412  6100 0062                600          BSR         parseHexString      ;check if the input contains valid Hex characters
-00001416  B67C FFFF                601          CMP.W       #-1,D3              ;Does the address contain valid Hex characters?
-0000141A  6700 000E                602          BEQ         enter_addr_edit_all_exit     ;No, return
-0000141E                           603  
-0000141E                           604  *------------------------------------------------------------------------------
-0000141E                           605  * Verify that the address entered is witin the range defined in the Equate
-0000141E                           606  *------------------------------------------------------------------------------        
-0000141E                           607          
-0000141E  6100 00C8                608          BSR         ck_addr_range       ;is address entered witin the range 
-00001422                           609                                          ;   as defined in the Equate? 
-00001422  B67C FFFF                610          CMP.W       #-1,D3              ;is the address  valid?
-00001426  6700 0002                611          BEQ         enter_addr_edit_all_exit     ;No, return
-0000142A                           612  
-0000142A                           613  enter_addr_edit_all_exit:
-0000142A                           614  
-0000142A  4E75                     615          RTS                             ;return
-0000142C                           616  
-0000142C                           617  *==============================================================================
-0000142C                           618  * ck_boundry - Check the size of the data characters input and determine
-0000142C                           619  *              if an odd number of characters was entered
-0000142C                           620  *
-0000142C                           621  * Parameters -
-0000142C                           622  *   Input   A1      The data that needs checked for odd length.
-0000142C                           623  *   Input   D1      The number of characters input     
-0000142C                           624  *   Output  D3      Returns '-1' when there is an odd length.
-0000142C                           625  *==============================================================================
-0000142C                           626  
-0000142C                           627  ck_boundry:
-0000142C                           628  
-0000142C  4243                     629          CLR.W       D3                  ;Clear the return
-0000142E                           630  
-0000142E  B23C 0000                631          CMP.B       #0,D1               ;Check for nothing entered
-00001432  6700 002E                632          BEQ         ck_size_error       ;Number of characters entered must be 
-00001436                           633                                          ;greater than 0  
-00001436                           634          
-00001436                           635          
-00001436                           636          * The program will branch to ck_size_error if D1 is greater than #8        
-00001436  B23C 0008                637          CMP.B       #8,D1               ;Check for more than 8 characters entered
-0000143A  6E00 0026                638          BGT         ck_size_error       ;Number of characters entered must be less
-0000143E                           639                                          ;than 9
-0000143E                           640          
-0000143E  7402                     641          MOVE.L      #$00000002,D2       ;Load a long 2 into D1
-00001440  82C2                     642          DIVU        D2,D1               ;Divide address by 2
-00001442  4841                     643          SWAP        D1                  ;get remainder
-00001444  B23C 0001                644          CMP.B       #$01,D1             ;Check for remainder of 1
-00001448  6700 0004                645          BEQ         ck_boundry_error    ;Number of characters entered must be an 
-0000144C                           646                                          ;even number   
-0000144C                           647    
-0000144C  4E75                     648          RTS                             ;return
-0000144E                           649  
-0000144E                           650  *------------------------------------------------------------------------------
-0000144E                           651  * ck_boundry_error - An odd number of characters was entered
-0000144E                           652  *                  - Load error message and display it
-0000144E                           653  *                  - Return error condition
-0000144E                           654  *------------------------------------------------------------------------------
-0000144E                           655          
-0000144E                           656  ck_boundry_error:
-0000144E                           657  
-0000144E  43F9 00001787            658          LEA         even_msg,A1         ;Load odd error message into A1
-00001454  2239 00001787            659          MOVE.L      even_msg,D1         ;Load error length to D1
-0000145A                           660          
-0000145A  7000                     661          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
-0000145C                           662                                          ; n is D1.W with CR, LF. 
-0000145C  4E4F                     663          TRAP #15                        ;Display the error message
-0000145E  76FF                     664          MOVE.L #-1,D3                   ;Load -1 into return parameter
-00001460  4E75                     665          RTS                             ;Return
-00001462                           666          
-00001462                           667  *------------------------------------------------------------------------------
-00001462                           668  * ck_size_error -   The number of characters entered must be more than zero
-00001462                           669  *                  - Load error message and display it
-00001462                           670  *                  - Return error condition
-00001462                           671  *------------------------------------------------------------------------------
-00001462                           672          
-00001462                           673  ck_size_error:
-00001462                           674  
-00001462  43F9 000016FA            675          LEA         invalidMsg,A1       ;Load invalid range message into A1
-00001468  2239 000016FA            676          MOVE.L      invalidMsg,D1       ;Load error length to D1
-0000146E                           677          
-0000146E  7000                     678          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
-00001470                           679                                          ; n is D1.W with CR, LF. 
-00001470  4E4F                     680          TRAP        #15                 ;Display the error message
-00001472  76FF                     681          MOVE.L      #-1,D3              ;Load -1 into return parameter
-00001474  4E75                     682          RTS                             ;Return        
-00001476                           683  
-00001476                           684  
-00001476                           685  *==============================================================================
-00001476                           686  * parseHexString - Converts user input string into a valid memory address
-00001476                           687  *                - Stores parsed address data into D3
-00001476                           688  *                - Stores good/bad (1/0) data in D4 
-00001476                           689  *
-00001476                           690  * Hex values are stored as bytes in D2, the ASCII chart shows their value
-00001476                           691  *   The ASCII chart values we care about are in the ranges of: 
-00001476                           692  *                            Hex            Decimal
-00001476                           693  *       No Value           NULL = 0         0
-00001476                           694  *       Numeric Values:     0-9 = 30-39     48-57
-00001476                           695  *       Upper Case letters: A-F = 41-46     65-70
-00001476                           696  *       Lower Case letterc: a-f = 61-66     97-102
-00001476                           697  
-00001476                           698  * Parameters -
-00001476                           699  *   Input   A1      The data that needs checked for valid input.
-00001476                           700  *   Output  D3      The return value, '-1' for error
-00001476                           701  *==============================================================================
-00001476                           702  
-00001476                           703  parseHexString:
-00001476                           704  
-00001476                           705  * setup any initializing item that do not get looped through
-00001476  4243                     706          CLR.W       D3                  ;Clear the return
-00001478                           707  
-00001478                           708          
-00001478                           709  *------------------------------------------------------------------------------
-00001478                           710  * NextHex - Loop through all bytes and vaildate the input
-00001478                           711  * Parameters -
-00001478                           712  *   Input   A1      The data that needs checked for valid input.
-00001478                           713  *   Output  D3      The return value, '-1' for error
-00001478                           714  *------------------------------------------------------------------------------
-00001478                           715          
-00001478                           716  NextHex:
-00001478                           717  
-00001478  1419                     718          MOVE.B      (A1)+,D2            ;Examine next character and decode it
-0000147A  B43C 0000                719          CMP.B       #0,D2               ;Check character for null 
-0000147E  6700 0066                720          BEQ         NextHexReturn       ;Character is null (end of input)
-00001482                           721          
-00001482                           722  *................................................................................
-00001482                           723  *  Check decimal values 0-9 by testing hexadecimal values 30-39
-00001482                           724  *................................................................................
-00001482                           725                  
-00001482                           726          * The program will branch to hex_range_error if D2 is less than #30
-00001482  B43C 0030                727          CMP.B       #48,D2              ;Hex value 30 = Ascii numeric value 0
-00001486  6D00 0048                728          BLT         hex_range_error     ;Branch to handle range error hexidecimal
-0000148A                           729                                          ;processing
-0000148A                           730          
-0000148A                           731          * The program will branch to UcaseHex if D2 is greater than #39
-0000148A  B43C 0039                732          CMP.B       #57,D2              ;Hex value 30 = Ascii numeric value 0
-0000148E  6E00 000A                733          BGT         UcaseHex            ;Branch to upper case hexidecimal processing
-00001492                           734          
-00001492                           735          *a valid number was found within this range
-00001492  0402 0030                736          SUBI.B      #48,D2              ;Change ascii decimal code to actual value
-00001496  6000 0032                737          BRA         NextHexDone         ;Done parsing this byte
-0000149A                           738  
-0000149A                           739  
-0000149A                           740  *..............................................................................
-0000149A                           741  *  Check upper case values A-F by testing hexadecimal values 41-46
-0000149A                           742  *..............................................................................
-0000149A                           743  
-0000149A                           744  UcaseHex:
-0000149A                           745  
-0000149A                           746          * The program will branch to hex_range_error if D2 is less than #41
-0000149A  B43C 0041                747          CMP.B       #65,D2              ;Hex value 41 = Ascii character value 'A'
-0000149E  6D00 0030                748          BLT         hex_range_error     ;Branch to handle range error hexidecimal
-000014A2                           749                                          ;processing
-000014A2                           750          
-000014A2  B43C 0046                751          CMP.B       #70,D2              ;Hex value 46 = Ascii character value 'F'
-000014A6  6E00 000A                752          BGT         LcaseHex            ;Branch to handle lower case hexidecimal 
-000014AA                           753                                          ;processing
-000014AA                           754          
-000014AA                           755          *a valid number was found within this range
-000014AA  0402 0037                756          SUBI.B      #55,D2              ;Change uppercase character to actual value
-000014AE  6000 001A                757          BRA         NextHexDone         ;Done parsing this byte
-000014B2                           758  
-000014B2                           759  
-000014B2                           760  *..............................................................................
-000014B2                           761  *  Check lower case values a-f by testing hexadecimal values 61-66
-000014B2                           762  *..............................................................................
-000014B2                           763  
-000014B2                           764  LcaseHex
-000014B2                           765          
-000014B2                           766          * The program will branch to hex_range_error if D2 is less than #61
-000014B2  B43C 0061                767          CMP.B       #97,D2              ;Hex value 61 = Ascii character value 'a'
-000014B6  6D00 0018                768          BLT         hex_range_error     ;Branch to handle range error hexidecimal 
-000014BA                           769                                          ;processing
+00001310  7000                     441          MOVEQ.L #0,D0 ;clear D0
+00001312  3401                     442          MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
+00001314  E04A                     443          LSR.W   #8,D2
+00001316  C47C 000F                444          AND.W   #$0F,D2 ;mask instruction
+0000131A                           445          
+0000131A                           446  checkCC:        
+0000131A  41F9 00001809            447          LEA     bccList,A0 ;get condition code signature list in A0
+00001320  D1C0                     448          ADDA.L  D0,A0 ;get correct sig         
+00001322  B410                     449          CMP.B   (A0),D2 ;compare to sig
+00001324  6700 0006                450          BEQ     foundCC ;if sig matches branch
+00001328  5200                     451          ADDQ.B  #byte,D0
+0000132A  60EE                     452          BRA     checkCC
+0000132C                           453  foundCC:
+0000132C  43F9 0000181A            454          LEA     conditionCodeMessage,A1 ;get condition code message in A1
+00001332  C0FC 0004                455          MULU.W  #long,D0 ;adjust size of D0 for a long
+00001336  D3C0                     456          ADDA.L  D0,A1 ;get correct message location
+00001338  2251                     457          MOVEA.L (A1),A1 ;get correct message
+0000133A                           458          
+0000133A  103C 000E                459          MOVE.B  #14,D0        ;set for task to display null terminated 
+0000133E                           460                                ;string without CR, LF
+0000133E  4E4F                     461          TRAP    #15
+00001340                           462  
+00001340                           463          
+00001340                           464          
+00001340  548B                     465          ADDQ.L  #word,A3 ;move past instruction in case long displacement
+00001342  C27C 00FF                466          AND.W   #$00FF,D1   ;check for word sized displacement
+00001346                           467          
+00001346  B23C 0000                468          CMP.B   #$0,D1
+0000134A  6700 0010                469          BEQ     BccWord
+0000134E                           470          
+0000134E  B23C 00FF                471          CMP.B   #$FF,D1 check for long sized displacement
+00001352  6700 0010                472          BEQ     BccLong
+00001356                           473          
+00001356                           474  BccByte:
+00001356                           475          
+00001356  7E00                     476          MOVEQ.L #0,D7 ;pass back no extra data followed
+00001358  6000 0012                477          BRA     BccDone
+0000135C                           478  BccWord:
+0000135C  3213                     479          MOVE.W  (A3),D1
+0000135E                           480          
+0000135E  7E02                     481          MOVEQ.L #word,D7 ;pass back an extra word followed
+00001360  6000 000A                482          BRA     BccDone
+00001364                           483  BccLong:
+00001364  2213                     484          MOVE.L  (A3),D1
+00001366                           485          
+00001366  7E04                     486          MOVEQ.L #long,D7 ;pass back an extra long followed
+00001368  6000 0002                487          BRA     BccDone
+0000136C                           488  BccDone:
+0000136C                           489  
+0000136C  343C 0010                490          MOVE.W  #16,D2 ;put base in D2
+00001370  303C 000F                491          MOVE.W  #15,D0  ;put task #15 in D0
+00001374  4E4F                     492          TRAP    #15
+00001376                           493          
+00001376  43F9 00001882            494          LEA     clearLine,A1  ;move string for a CR and LF
+0000137C  103C 000E                495          MOVE.B  #14,D0        ;set for task to display null terminated 
+00001380                           496                                ;string without CR, LF
+00001380  4E4F                     497          TRAP    #15
+00001382                           498  
+00001382  7000                     499          MOVEQ.L #0,D0
+00001384  4E75                     500          RTS
+00001386                           501          
+00001386                           502          
+00001386                           503  unknownOpCode:
+00001386  43F9 000018A5            504          LEA     dataMessage,A1 ;move string for data info
+0000138C  103C 000E                505          MOVE.B  #14,D0        ;set for task to display null terminated 
+00001390                           506                                ;string without CR, LF
+00001390  4E4F                     507          TRAP    #15
+00001392                           508          
+00001392  143C 0010                509          MOVE.B  #16,D2        ;set for displaying a base16(hex) number
+00001396  103C 000F                510          MOVE.B  #15,D0
+0000139A  4E4F                     511          TRAP    #15
+0000139C  43F9 00001882            512          LEA     clearLine,A1  ;move string for a CR and LF
+000013A2  103C 000E                513          MOVE.B  #14,D0        ;set for task to display null terminated 
+000013A6                           514                                ;string without CR, LF
+000013A6  4E4F                     515          TRAP    #15
+000013A8                           516          
+000013A8  7000                     517          MOVEQ.L #0,D0
+000013AA  4E75                     518          RTS
+000013AC                           519          
+000013AC                           520  
+000013AC                           521  
+000013AC                           522          
+000013AC                           523          
+000013AC                           524  fin
+000013AC                           525  
+000013AC                           526          
+000013AC                           527          
+000013AC  FFFF FFFF                528          simhalt
+000013B0                           529          
+000013B0                           530  
+000013B0                           531  *******************************************************************************
+000013B0                           532  *                            SUB ROUTINES
+000013B0                           533  *******************************************************************************
+000013B0                           534  
+000013B0                           535  *==========================================================================
+000013B0                           536  *                   Enter / Validate beginning address 
+000013B0                           537  *==========================================================================
+000013B0                           538   
+000013B0                           539  begin_address:
+000013B0                           540  
+000013B0                           541         
+000013B0  43F9 000016BA            542          LEA         slPrompt,A1         ;Load address for starting loaction prompt
+000013B6  2239 000016BA            543          MOVE.L      slPrompt,D1         ;Load display length to D1
+000013BC  700E                     544          MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
+000013BE  4E4F                     545          TRAP        #15                 ;Perform task 14 (display)
+000013C0                           546          
+000013C0  43F9 000018DE            547          LEA         startLocation,A1    ;Load address to store user input
+000013C6  103C 0002                548          MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
+000013CA  4E4F                     549          TRAP        #15                 ;Perform task 2 (input)
+000013CC                           550          
+000013CC  0C11 001B                551          CMP.B       #27,(A1)            ;Check for ESC entered
+000013D0  6700 004C                552          BEQ         address_Exit        ;Exit condition 
+000013D4                           553          
+000013D4  6100 0050                554          BSR         enter_addr_edit_all
+000013D8  B67C FFFF                555          CMP.W       #-1,D3              ;Did the edit pass?
+000013DC  67D2                     556          BEQ         begin_address       ;No, loop and ask for correct input
+000013DE                           557          
+000013DE  2643                     558          MOVEA.L     D3,A3               ;Beginning address gets stored in A3
+000013E0                           559          
+000013E0  43F9 000017C7            560          LEA         spc,A1              ;Load address for starting loaction prompt
+000013E6  1239 000017C8            561          MOVE.B      spc_len,D1          ;Load empty line length
+000013EC  7000                     562          MOVE.L      #0,D0               ;0 = Display the NULL terminated string at (A1) with CR, LF.
+000013EE  4E4F                     563          TRAP        #15                 ;Perform task 14 (display)
+000013F0  6000 0002                564          BRA         end_address
+000013F4                           565  
+000013F4                           566  *===========================================================================
+000013F4                           567  *                   Enter / Validate ending address 
+000013F4                           568  *===========================================================================
+000013F4                           569  
+000013F4                           570  end_address:
+000013F4                           571          
+000013F4  43F9 000016EB            572          LEA         elPrompt,A1         ;Load address for ending loaction prompt
+000013FA                           573          ;MOVE.L     elPrompt,D1         ;Load display length to D1
+000013FA  7250                     574          MOVE.L      #80,D1       ;did not like previous command, do not know why, it should have worked
+000013FC  700E                     575          MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
+000013FE  4E4F                     576          TRAP        #15                 ;Perform task 14 (display)
+00001400                           577          
+00001400  103C 0002                578          MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
+00001404  4E4F                     579          TRAP        #15                 ;Perform task 2 (input)
+00001406                           580          
+00001406  0C11 001B                581          CMP.B       #27,(A1)            ;Check for ESC entered
+0000140A  6700 0012                582          BEQ         address_Exit        ;Exit condition 
+0000140E                           583          
+0000140E  6100 0016                584          BSR         enter_addr_edit_all
+00001412  B67C FFFF                585          CMP.W       #-1,D3              ;Did the edit pass?
+00001416  67DC                     586          BEQ         end_address         ;No, loop and ask for correct input
+00001418                           587  
+00001418  2843                     588          MOVEA.L     D3,A4               ;Ending address gets stored in A4
+0000141A  6000 0008                589          BRA         address_done
+0000141E                           590  
+0000141E                           591  address_Exit:
+0000141E                           592  
+0000141E  76FF                     593          MOVE.L      #-1,D3              ;Load -1 into return parameter
+00001420  6000 0002                594          BRA         address_done
+00001424                           595          
+00001424                           596  address_done:
+00001424                           597  
+00001424  4E75                     598          RTS    
+00001426                           599  
+00001426                           600  *==============================================================================
+00001426                           601  * enter_addr_edit_all - Enter address edit check to edit all errors  
+00001426                           602  *                       using multiple different error checking routines.
+00001426                           603  *
+00001426                           604  * Parameters -
+00001426                           605  *   Input   A1      The data that needs checked.
+00001426                           606  *   Input   D1      The number of characters input     
+00001426                           607  *   Output  D3      Returns '-1' when there is an error.
+00001426                           608  *==============================================================================
+00001426                           609  
+00001426                           610  enter_addr_edit_all
+00001426                           611  
+00001426                           612  *------------------------------------------------------------------------------
+00001426                           613  * Test for odd number of characters entered, not allowed
+00001426                           614  *------------------------------------------------------------------------------
+00001426                           615         
+00001426  6100 0024                616          BSR         ck_boundry          ;check if the input is on a odd / even boundry
+0000142A  B67C FFFF                617          CMP.W       #-1,D3              ;Is the address odd?
+0000142E  6700 001A                618          BEQ         enter_addr_edit_all_exit     ;No, return
+00001432                           619  
+00001432                           620  *------------------------------------------------------------------------------
+00001432                           621  * Ttest for character entered all being valid address characters
+00001432                           622  * Note: lower case a-f, gets converted to upper case A-F in D3
+00001432                           623  *------------------------------------------------------------------------------
+00001432                           624          
+00001432  6100 0062                625          BSR         parseHexString      ;check if the input contains valid Hex characters
+00001436  B67C FFFF                626          CMP.W       #-1,D3              ;Does the address contain valid Hex characters?
+0000143A  6700 000E                627          BEQ         enter_addr_edit_all_exit     ;No, return
+0000143E                           628  
+0000143E                           629  *------------------------------------------------------------------------------
+0000143E                           630  * Verify that the address entered is witin the range defined in the Equate
+0000143E                           631  *------------------------------------------------------------------------------        
+0000143E                           632          
+0000143E  6100 00C8                633          BSR         ck_addr_range       ;is address entered witin the range 
+00001442                           634                                          ;   as defined in the Equate? 
+00001442  B67C FFFF                635          CMP.W       #-1,D3              ;is the address  valid?
+00001446  6700 0002                636          BEQ         enter_addr_edit_all_exit     ;No, return
+0000144A                           637  
+0000144A                           638  enter_addr_edit_all_exit:
+0000144A                           639  
+0000144A  4E75                     640          RTS                             ;return
+0000144C                           641  
+0000144C                           642  *==============================================================================
+0000144C                           643  * ck_boundry - Check the size of the data characters input and determine
+0000144C                           644  *              if an odd number of characters was entered
+0000144C                           645  *
+0000144C                           646  * Parameters -
+0000144C                           647  *   Input   A1      The data that needs checked for odd length.
+0000144C                           648  *   Input   D1      The number of characters input     
+0000144C                           649  *   Output  D3      Returns '-1' when there is an odd length.
+0000144C                           650  *==============================================================================
+0000144C                           651  
+0000144C                           652  ck_boundry:
+0000144C                           653  
+0000144C  4243                     654          CLR.W       D3                  ;Clear the return
+0000144E                           655  
+0000144E  B23C 0000                656          CMP.B       #0,D1               ;Check for nothing entered
+00001452  6700 002E                657          BEQ         ck_size_error       ;Number of characters entered must be 
+00001456                           658                                          ;greater than 0  
+00001456                           659          
+00001456                           660          
+00001456                           661          * The program will branch to ck_size_error if D1 is greater than #8        
+00001456  B23C 0008                662          CMP.B       #8,D1               ;Check for more than 8 characters entered
+0000145A  6E00 0026                663          BGT         ck_size_error       ;Number of characters entered must be less
+0000145E                           664                                          ;than 9
+0000145E                           665          
+0000145E  7402                     666          MOVE.L      #$00000002,D2       ;Load a long 2 into D1
+00001460  82C2                     667          DIVU        D2,D1               ;Divide address by 2
+00001462  4841                     668          SWAP        D1                  ;get remainder
+00001464  B23C 0001                669          CMP.B       #$01,D1             ;Check for remainder of 1
+00001468  6700 0004                670          BEQ         ck_boundry_error    ;Number of characters entered must be an 
+0000146C                           671                                          ;even number   
+0000146C                           672    
+0000146C  4E75                     673          RTS                             ;return
+0000146E                           674  
+0000146E                           675  *------------------------------------------------------------------------------
+0000146E                           676  * ck_boundry_error - An odd number of characters was entered
+0000146E                           677  *                  - Load error message and display it
+0000146E                           678  *                  - Return error condition
+0000146E                           679  *------------------------------------------------------------------------------
+0000146E                           680          
+0000146E                           681  ck_boundry_error:
+0000146E                           682  
+0000146E  43F9 000017A7            683          LEA         even_msg,A1         ;Load odd error message into A1
+00001474  2239 000017A7            684          MOVE.L      even_msg,D1         ;Load error length to D1
+0000147A                           685          
+0000147A  7000                     686          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+0000147C                           687                                          ; n is D1.W with CR, LF. 
+0000147C  4E4F                     688          TRAP #15                        ;Display the error message
+0000147E  76FF                     689          MOVE.L #-1,D3                   ;Load -1 into return parameter
+00001480  4E75                     690          RTS                             ;Return
+00001482                           691          
+00001482                           692  *------------------------------------------------------------------------------
+00001482                           693  * ck_size_error -   The number of characters entered must be more than zero
+00001482                           694  *                  - Load error message and display it
+00001482                           695  *                  - Return error condition
+00001482                           696  *------------------------------------------------------------------------------
+00001482                           697          
+00001482                           698  ck_size_error:
+00001482                           699  
+00001482  43F9 0000171A            700          LEA         invalidMsg,A1       ;Load invalid range message into A1
+00001488  2239 0000171A            701          MOVE.L      invalidMsg,D1       ;Load error length to D1
+0000148E                           702          
+0000148E  7000                     703          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+00001490                           704                                          ; n is D1.W with CR, LF. 
+00001490  4E4F                     705          TRAP        #15                 ;Display the error message
+00001492  76FF                     706          MOVE.L      #-1,D3              ;Load -1 into return parameter
+00001494  4E75                     707          RTS                             ;Return        
+00001496                           708  
+00001496                           709  
+00001496                           710  *==============================================================================
+00001496                           711  * parseHexString - Converts user input string into a valid memory address
+00001496                           712  *                - Stores parsed address data into D3
+00001496                           713  *                - Stores good/bad (1/0) data in D4 
+00001496                           714  *
+00001496                           715  * Hex values are stored as bytes in D2, the ASCII chart shows their value
+00001496                           716  *   The ASCII chart values we care about are in the ranges of: 
+00001496                           717  *                            Hex            Decimal
+00001496                           718  *       No Value           NULL = 0         0
+00001496                           719  *       Numeric Values:     0-9 = 30-39     48-57
+00001496                           720  *       Upper Case letters: A-F = 41-46     65-70
+00001496                           721  *       Lower Case letterc: a-f = 61-66     97-102
+00001496                           722  
+00001496                           723  * Parameters -
+00001496                           724  *   Input   A1      The data that needs checked for valid input.
+00001496                           725  *   Output  D3      The return value, '-1' for error
+00001496                           726  *==============================================================================
+00001496                           727  
+00001496                           728  parseHexString:
+00001496                           729  
+00001496                           730  * setup any initializing item that do not get looped through
+00001496  4243                     731          CLR.W       D3                  ;Clear the return
+00001498                           732  
+00001498                           733          
+00001498                           734  *------------------------------------------------------------------------------
+00001498                           735  * NextHex - Loop through all bytes and vaildate the input
+00001498                           736  * Parameters -
+00001498                           737  *   Input   A1      The data that needs checked for valid input.
+00001498                           738  *   Output  D3      The return value, '-1' for error
+00001498                           739  *------------------------------------------------------------------------------
+00001498                           740          
+00001498                           741  NextHex:
+00001498                           742  
+00001498  1419                     743          MOVE.B      (A1)+,D2            ;Examine next character and decode it
+0000149A  B43C 0000                744          CMP.B       #0,D2               ;Check character for null 
+0000149E  6700 0066                745          BEQ         NextHexReturn       ;Character is null (end of input)
+000014A2                           746          
+000014A2                           747  *................................................................................
+000014A2                           748  *  Check decimal values 0-9 by testing hexadecimal values 30-39
+000014A2                           749  *................................................................................
+000014A2                           750                  
+000014A2                           751          * The program will branch to hex_range_error if D2 is less than #30
+000014A2  B43C 0030                752          CMP.B       #48,D2              ;Hex value 30 = Ascii numeric value 0
+000014A6  6D00 0048                753          BLT         hex_range_error     ;Branch to handle range error hexidecimal
+000014AA                           754                                          ;processing
+000014AA                           755          
+000014AA                           756          * The program will branch to UcaseHex if D2 is greater than #39
+000014AA  B43C 0039                757          CMP.B       #57,D2              ;Hex value 30 = Ascii numeric value 0
+000014AE  6E00 000A                758          BGT         UcaseHex            ;Branch to upper case hexidecimal processing
+000014B2                           759          
+000014B2                           760          *a valid number was found within this range
+000014B2  0402 0030                761          SUBI.B      #48,D2              ;Change ascii decimal code to actual value
+000014B6  6000 0032                762          BRA         NextHexDone         ;Done parsing this byte
+000014BA                           763  
+000014BA                           764  
+000014BA                           765  *..............................................................................
+000014BA                           766  *  Check upper case values A-F by testing hexadecimal values 41-46
+000014BA                           767  *..............................................................................
+000014BA                           768  
+000014BA                           769  UcaseHex:
 000014BA                           770  
-000014BA  B43C 0066                771          CMP.B       #102,D2              ;Hex value 66 = Ascii character value 'f'
-000014BE  6E00 0010                772          BGT         hex_range_error     ;Branch to handle range error hexidecimal 
-000014C2                           773                                          ;processing
-000014C2                           774  
-000014C2                           775          *a valid number was found within this range
-000014C2  0402 0057                776          SUBI.B      #87,D2              ;Change lowercase character to actual value
-000014C6  6000 0002                777          BRA         NextHexDone         ;Done parsing this byte
-000014CA                           778  
-000014CA                           779  NextHexDone:
-000014CA                           780  
-000014CA  E983                     781          ASL.L       #4,D3               ; Make rooom for new byte in the return register
-000014CC  D602                     782          ADD.B       D2,D3               ; Move the new byte into the return register
-000014CE  60A8                     783          BRA         NextHex             ; We're ready to parse the next byte
-000014D0                           784          
-000014D0                           785  *-------------------------------------------------------------------------------------
-000014D0                           786  * hex_range_error -  A character entered was within the valid range for a hex address
-000014D0                           787  *                 -  Load error message and display it
-000014D0                           788  *                 -  Return error condition
-000014D0                           789  *-------------------------------------------------------------------------------------
-000014D0                           790          
-000014D0                           791  hex_range_error:
-000014D0                           792  
-000014D0  43F9 0000173F            793          LEA         invCharMsg,A1       ;Load invalid range message into A1
-000014D6  2239 0000173F            794          MOVE.L      invCharMsg,D1       ;Load error length to D1
-000014DC                           795          
-000014DC  7000                     796          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
-000014DE                           797                                          ; n is D1.W with CR, LF. 
-000014DE  4E4F                     798          TRAP        #15                 ;Display the error message
-000014E0  76FF                     799          MOVE.L      #-1,D3              ;Load -1 into return parameter
-000014E2  6000 0002                800          BRA         NextHexReturn
-000014E6                           801          
-000014E6                           802  NextHexReturn:
-000014E6                           803          
-000014E6  4E75                     804          RTS                             ;Return      
-000014E8                           805  
-000014E8                           806  
-000014E8                           807  *===============================================================================
-000014E8                           808  * ck_addr_range - check the address input is within a valid memory address range
-000014E8                           809  *                - Parsed address data into D3
-000014E8                           810  *
-000014E8                           811  * Parameters -
-000014E8                           812  *   Input   A1      The data that needs checked for valid address.
-000014E8                           813  *   Output  D3      The return value, '-1' for error
-000014E8                           814  *===============================================================================
-000014E8                           815  
-000014E8                           816  
-000014E8                           817  ck_addr_range:   
-000014E8                           818  
-000014E8                           819  *------------------------------------------------------------------------------
-000014E8                           820  * Verify that the address entered is witin the 
-000014E8                           821  * beginning range ('begin') as defined in the Equate
-000014E8                           822  *------------------------------------------------------------------------------   
-000014E8                           823              
-000014E8  2C3C 00005001            824          MOVE.L      #begin,D6           * Load minimum starting address
-000014EE  B686                     825          CMP.L       D6,D3               * Is input at or above minimum?
-000014F0  6D00 0012                826          BLT         ck_addr_range_error 
-000014F4                           827          
-000014F4                           828  *------------------------------------------------------------------------------
-000014F4                           829  * Verify that the address entered is witin the 
-000014F4                           830  * ending range ('end') as defined in the Equate
-000014F4                           831  *------------------------------------------------------------------------------
-000014F4                           832          
-000014F4  2C3C 00FFFFFE            833          MOVE.L      #end,D6             * Load maximum starting address
-000014FA  B686                     834          CMP.L       D6,D3               * Is input at or below maximum?
-000014FC  6E00 0006                835          BGT         ck_addr_range_error 
-00001500  6000 0012                836          BRA         ck_addr_done        ;done checking
-00001504                           837          
-00001504                           838  *..............................................................................
-00001504                           839  * ck_addr_range_error -  A address entered is not within the 
-00001504                           840  *                        valid range for a hex address
-00001504                           841  *..............................................................................
-00001504                           842          
-00001504                           843  ck_addr_range_error
-00001504                           844  
-00001504  43F9 000016FA            845          LEA         invalidMsg,A1       ;Load invalid range message into A1
-0000150A                           846          
-0000150A  700D                     847          MOVE.L      #13,D0              ;Display null terminated string at (A1), 
-0000150C                           848                                          ;with CR, LF. 
-0000150C  4E4F                     849          TRAP        #15                 ;Display the error message
-0000150E  76FF                     850          MOVE.L      #-1,D3              ;Load -1 into return parameter
-00001510  6000 0002                851          BRA         ck_addr_done 
-00001514                           852  
-00001514                           853  ck_addr_done:
-00001514                           854  
-00001514  4E75                     855          RTS                             ;Return
-00001516                           856  
-00001516                           857  *******************************************************************************
-00001516                           858  *                            Effective Addressing
-00001516                           859  *******************************************************************************
-00001516                           860  
-00001516                           861  Effective_Address:
-00001516                           862  
-00001516  1C05                     863          MOVE.B      D5,D6
-00001518  E60E                     864          LSR.B       #3,D6               ;mode
-0000151A  CA3C 0007                865          And.B       #%00000111,D5       ;register
-0000151E                           866          
-0000151E  BC3C 0000                867          CMP.B       #0,D6               ;0 = Dn - Data Register Direct (000)
-00001522  6700 004A                868          BEQ         Data_Reg_Direct
-00001526                           869          
-00001526  BC3C 0001                870          CMP.B       #1,D6               ;1 = (An) - Address Register Direct (001) 
-0000152A  6700 0076                871          BEQ         Addr_Reg_Indirect
-0000152E                           872          
-0000152E  BC3C 0002                873          CMP.B       #2,D6               ;2 = (An) - Address Register Indirect (010
-00001532  6700 006E                874          BEQ         Addr_Reg_Indirect
-00001536                           875          
-00001536  BC3C 0003                876          CMP.B       #3,D6               ;3 = (An) - Address Register Indirect with Postincrement (011)
-0000153A  6700 0098                877          BEQ         Addr_Reg_Indirect_Inc
-0000153E                           878          
-0000153E  BC3C 0004                879          CMP.B       #4,D6               ;4 = (An) - Address Register Indirect with Predecrement (100)
-00001542  6700 00CE                880          BEQ         Addr_Reg_Indirect_Dec
-00001546                           881          
-00001546  BC3C 0007                882          CMP.B       #7,D6               ;7 = (An) - Address Register Indirect with Predecrement (111)
-0000154A  6700 0006                883          BEQ         Effective_Address_Other
-0000154E                           884          
-0000154E  6000 0138                885          BRA         invalidEA
-00001552                           886          
-00001552                           887  Effective_Address_Other:        
-00001552                           888          
-00001552  BA3C 0000                889          CMP.B       #0,D5               ;0 = (xxx).W - Absolute Short Addressing Mode (000)
-00001556  6700 00F8                890          BEQ Addr_Abs_Short
-0000155A                           891          
-0000155A  BA3C 0001                892          CMP.B       #1,D5               ;1 = (xxx).W - Absolute Long Addressing Mode (001)
-0000155E  6700 0104                893          BEQ Addr_Abs_Long
-00001562                           894          
-00001562  BA3C 0004                895          CMP.B       #4,D5               ;4 = #(data).W - Absolute Long Addressing Mode (100)
-00001566  6700 0110                896          BEQ Addr_Immediate_Data
-0000156A                           897          
-0000156A  6000 011C                898          BRA         invalidEA
-0000156E                           899          
-0000156E                           900  Data_Reg_Direct:                        ;case 0(0000)
-0000156E                           901  
-0000156E                           902          ;MOVE.B      D0,D5               ;print D5 (register number)
-0000156E                           903          
-0000156E                           904          
-0000156E                           905          
-0000156E                           906          ;LEA         clearLine,A1        ;move string for a CR and LF
-0000156E                           907   
-0000156E  43F9 000018B4            908          LEA         letterD,A1          ;output 'D' for data register
-00001574  103C 000E                909          MOVE.B      #14,D0              ;set for task to display null terminated 
-00001578  4E4F                     910          TRAP        #15                 ;string without CR, LF
-0000157A                           911                          
-0000157A  4281                     912          CLR.L       D1
-0000157C  1205                     913          MOVE.B      D5,D1               ;move register number for display into D1
-0000157E  103C 0003                914          MOVE.B      #3,D0               ;set for task to display null terminated 
-00001582  4E4F                     915          TRAP        #15                 ;string without CR, LF
-00001584                           916          
-00001584                           917  *how to do offset???
-00001584                           918          
-00001584  6000 0102                919          BRA         Effective_Address_Exit  ;return
-00001588                           920          
-00001588                           921          
-00001588                           922  Addr_Reg_Direct:                        ;case 1(001) - output "A" then D5
-00001588                           923        
-00001588  43F9 000018B2            924          LEA         letterA,A1          ;output 'A' for address register
-0000158E  103C 000E                925          MOVE.B      #14,D0              ;set for task to display null terminated 
-00001592  4E4F                     926          TRAP        #15                 ;string without CR, LF
-00001594                           927          
-00001594  4281                     928          CLR.L       D1
-00001596  1205                     929          MOVE.B      D5,D1               ;move register number for display into D1
-00001598  103C 0003                930          MOVE.B      #3,D0               ;set for task to display null terminated 
-0000159C  4E4F                     931          TRAP        #15                 ;string without CR, LF
-0000159E                           932          
-0000159E  6000 00E8                933          BRA         Effective_Address_Exit  ;return
-000015A2                           934  
-000015A2                           935  
-000015A2                           936  Addr_Reg_Indirect:                      ;case 1(010) - output "(A" then D5, then ")"
-000015A2                           937          
-000015A2  43F9 000018BA            938          LEA         lprn,A1             ;output 'D' for data register
-000015A8  103C 000E                939          MOVE.B      #14,D0              ;set for task to display null terminated 
-000015AC  4E4F                     940          TRAP        #15                 ;string without CR, LF
-000015AE                           941  
-000015AE  43F9 000018B2            942          LEA         letterA,A1          ;output 'A' for address register
-000015B4  103C 000E                943          MOVE.B      #14,D0              ;set for task to display null terminated 
-000015B8  4E4F                     944          TRAP        #15                 ;string without CR, LF
-000015BA                           945          
-000015BA  4281                     946          CLR.L       D1
-000015BC  1205                     947          MOVE.B      D5,D1               ;move register number for display into D1
-000015BE  103C 0003                948          MOVE.B      #3,D0               ;set for task to display null terminated 
-000015C2  4E4F                     949          TRAP        #15                 ;string without CR, LF
-000015C4                           950  
-000015C4  43F9 000018BC            951          LEA         rprn,A1             ;output 'D' for data register
-000015CA  103C 000E                952          MOVE.B      #14,D0              ;set for task to display null terminated 
-000015CE  4E4F                     953          TRAP        #15                 ;string without CR, LF
-000015D0                           954          
-000015D0  6000 00B6                955          BRA         Effective_Address_Exit  ;return
-000015D4                           956  
-000015D4                           957                 
-000015D4                           958  Addr_Reg_Indirect_Inc                   ;3 = (An)+ - Address Register Indirect with Postincrement (011)
-000015D4                           959  
-000015D4  43F9 000018BA            960          LEA         lprn,A1             ;output 'D' for data register
-000015DA  103C 000E                961          MOVE.B      #14,D0              ;set for task to display null terminated 
-000015DE  4E4F                     962          TRAP        #15                 ;string without CR, LF
-000015E0                           963  
-000015E0  43F9 000018B2            964          LEA         letterA,A1          ;output 'A' for address register
-000015E6  103C 000E                965          MOVE.B      #14,D0              ;set for task to display null terminated 
-000015EA  4E4F                     966          TRAP        #15                 ;string without CR, LF
-000015EC                           967          
-000015EC  4281                     968          CLR.L       D1
-000015EE  1205                     969          MOVE.B      D5,D1               ;move register number for display into D1
-000015F0  103C 0003                970          MOVE.B      #3,D0               ;set for task to display null terminated 
-000015F4  4E4F                     971          TRAP        #15                 ;string without CR, LF
-000015F6                           972  
-000015F6  43F9 000018BC            973          LEA         rprn,A1             ;output 'D' for data register
-000015FC  103C 000E                974          MOVE.B      #14,D0              ;set for task to display null terminated 
-00001600  4E4F                     975          TRAP        #15                 ;string without CR, LF
-00001602                           976          
-00001602  43F9 000018B6            977          LEA         plus,A1             ;output 'D' for data register
-00001608  103C 000E                978          MOVE.B      #14,D0              ;set for task to display null terminated 
-0000160C  4E4F                     979          TRAP        #15                 ;string without CR, LF
-0000160E                           980          
-0000160E  6000 0078                981          BRA         Effective_Address_Exit  ;return
-00001612                           982  
-00001612                           983  Addr_Reg_Indirect_Dec                   ;4 = –(An) - Address Register Indirect with Predecrement (100)
-00001612                           984  
-00001612  43F9 000018B8            985          LEA         minus,A1            ;output '-' for Predecrement
-00001618  103C 000E                986          MOVE.B      #14,D0              ;set for task to display null terminated 
-0000161C  4E4F                     987          TRAP        #15                 ;string without CR, LF
-0000161E                           988  
-0000161E  43F9 000018BA            989          LEA         lprn,A1             ;output 'D' for data register
-00001624  103C 000E                990          MOVE.B      #14,D0              ;set for task to display null terminated 
-00001628  4E4F                     991          TRAP        #15                 ;string without CR, LF
-0000162A                           992  
-0000162A  43F9 000018B2            993          LEA         letterA,A1          ;output 'A' for address register
-00001630  103C 000E                994          MOVE.B      #14,D0              ;set for task to display null terminated 
-00001634  4E4F                     995          TRAP        #15                 ;string without CR, LF
-00001636                           996          
-00001636  4281                     997          CLR.L       D1
-00001638  1205                     998          MOVE.B      D5,D1               ;move register number for display into D1
-0000163A  103C 0003                999          MOVE.B      #3,D0               ;set for task to display null terminated 
-0000163E  4E4F                    1000          TRAP        #15                 ;string without CR, LF
-00001640                          1001  
-00001640  43F9 000018BC           1002          LEA         rprn,A1             ;output 'D' for data register
-00001646  103C 000E               1003          MOVE.B      #14,D0              ;set for task to display null terminated 
-0000164A  4E4F                    1004          TRAP        #15                 ;string without CR, LF
-0000164C                          1005          
-0000164C  6000 003A               1006          BRA         Effective_Address_Exit  ;return
-00001650                          1007  
-00001650                          1008          
-00001650                          1009                         
-00001650                          1010  Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing Mode (000)
-00001650                          1011          
-00001650                          1012          
-00001650  43F9 00001894           1013          LEA         xxxW,A1             ;output 'D' for data register
-00001656  103C 000E               1014          MOVE.B      #14,D0              ;set for task to display null terminated 
-0000165A  4E4F                    1015          TRAP        #15                 ;string without CR, LF
-0000165C                          1016  
-0000165C  548B                    1017          ADDA.L      #word,A3
-0000165E                          1018          
-0000165E                          1019          ;print word (A3)
-0000165E                          1020          ;MOVE.W      A3,(A1)
-0000165E                          1021          ;MOVE.B      #14,D0              ;set for task to display null terminated 
-0000165E                          1022          ;TRAP        #15                 ;string without CR, LF
-0000165E                          1023          
-0000165E  5487                    1024          ADDI.L      #word,D7 
-00001660  6000 0026               1025          BRA         Effective_Address_Exit  ;return
-00001664                          1026                         
-00001664                          1027  Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing Mode (001)
-00001664                          1028          
-00001664  43F9 0000189E           1029          LEA         xxxL,A1             ;output 'D' for data register
-0000166A  103C 000E               1030          MOVE.B      #14,D0              ;set for task to display null terminated 
-0000166E  4E4F                    1031          TRAP        #15                 ;string without CR, LF
-00001670                          1032  
-00001670  548B                    1033          ADDA.L      #word,A3
-00001672                          1034          ;print long (A3)
-00001672                          1035          ;MOVE.L      A3,(A1)
-00001672                          1036          ;MOVE.B      #14,D0              ;set for task to display null terminated 
-00001672                          1037          ;TRAP        #15                 ;string without CR, LF
-00001672                          1038          
-00001672  5887                    1039          ADDI.L      #long,D7
-00001674  6000 0012               1040          BRA         Effective_Address_Exit  ;return
-00001678                          1041                         
-00001678                          1042  Addr_Immediate_Data                     ;4 = #(data) - Absolute Long Addressing Mode (100)
-00001678                          1043  
-00001678  43F9 000018A8           1044          LEA         iData,A1            ;output 'D' for data register
-0000167E  103C 000E               1045          MOVE.B      #14,D0              ;set for task to display null terminated 
-00001682  4E4F                    1046          TRAP        #15                 ;string without CR, LF
-00001684                          1047          
-00001684                          1048          *need another input param for size
-00001684  6000 0002               1049          BRA         Effective_Address_Exit  ;return
-00001688                          1050  
-00001688                          1051  invalidEA:
-00001688                          1052  
-00001688                          1053          ;do something
-00001688                          1054   
-00001688                          1055  Effective_Address_Exit:     
-00001688                          1056  
-00001688  4E75                    1057          RTS                             ;return
-0000168A                          1058  
-0000168A                          1059  switchModeAndReg:
-0000168A                          1060  ***
-0000168A                          1061  * Assumed in D2
-0000168A                          1062  *
-0000168A                          1063  * Assumed that they are in least significant byte:
-0000168A                          1064  *
-0000168A                          1065  *            _this_
-0000168A                          1066  *           /      \
-0000168A                          1067  *  ........ ........
-0000168A                          1068  *  \                /
-0000168A                          1069  *   -----word-------
-0000168A                          1070  *
-0000168A                          1071  *  and that in that byte they are ordered:
-0000168A                          1072  *
-0000168A                          1073  *       ........   
-0000168A                          1074  *       \/\_/\_/
-0000168A                          1075  *      /  /    \
-0000168A                          1076  *    /   /      \
-0000168A                          1077  * dont  one    other
-0000168A                          1078  * care
-0000168A                          1079  *
-0000168A                          1080  * after they will be
-0000168A                          1081  *
-0000168A                          1082  *       ........   
-0000168A                          1083  *       \/\_/\_/
-0000168A                          1084  *      /  /    \
-0000168A                          1085  *    /   /      \
-0000168A                          1086  * dont other    one
-0000168A                          1087  * care
-0000168A                          1088  *** 
-0000168A  0283 00000000           1089          ANDI.L #0,D3 ;clear D3
-00001690  1602                    1090          MOVE.B D2,D3 ;copy to D3
-00001692  E70B                    1091          LSL.B  #3,D3 
-00001694  E60A                    1092          LSR.B  #3,D2
-00001696  D403                    1093          ADD.B  D3,D2
-00001698  4E75                    1094          RTS
-0000169A                          1095  
-0000169A                          1096          
-0000169A                          1097  *==============================================================================
-0000169A                          1098  *                            variables and constants
-0000169A                          1099  *==============================================================================
-0000169A                          1100  
-0000169A                          1101  
-0000169A                          1102  ***initial user prompt stuff        
-0000169A= 45 6E 74 65 72 20 ...   1103  slPrompt        DC.B    'Enter a starting address from $0 to $00FFFFFE: $',0
-000016CB= 45 6E 74 65 72 20 ...   1104  elPrompt        DC.B    'Enter a ending address from $0 to $00FFFFFE: $',0
-000016FA                          1105  
-000016FA= 20 41 64 64 72 65 ...   1106  invalidMsg      DC.B    ' Address entered is not within the specified range! Please try again',0
-0000173F= 20 41 20 43 68 61 ...   1107  invCharMsg      DC.B    ' A Character entered is not a valid address character! Please try again',0
-00001787                          1108  
-00001787= 20 59 6F 75 20 6D ...   1109  even_msg        DC.B    ' You must enter an even address!'
-000017A7                          1110  
-000017A7= 20                      1111  spc             DC.B    ' '
-000017A8= 01                      1112  spc_len         DC.B    spc_len-spc
-000017A9                          1113  ***
-000017A9                          1114  
-000017A9                          1115  
-000017A9                          1116  
-000017A9                          1117  ***list of OP codes
-000017A9  =00004E80               1118  jsrInstruction   EQU %0100111010000000
-000017A9  =00004E75               1119  rtsInstruction   EQU %0100111001110101
-000017A9  =00004E71               1120  NoOpInstruction  EQU %0100111001110001
-000017A9  =00000000               1121  moveInstruction  EQU 0
-000017A9  =00006000               1122  bccInstruction   EQU %0110000000000000
-000017A9  =00004400               1123  negInstruction   EQU %0100010000000000
-000017A9  =00000000               1124  dataInstruction  EQU 0
-000017A9                          1125  
-000017A9                          1126  ***
-000017A9                          1127  
-000017A9                          1128  ***list of OP masks
-000017A9  =0000FFC0               1129  jsrMask   EQU %1111111111000000
-000017A9  =0000FFFF               1130  rtsMask   EQU $FFFF
-000017A9  =0000FFFF               1131  NoOpMask  EQU $FFFF
-000017A9  =0000C000               1132  moveMask  EQU $C000
-000017A9  =0000F000               1133  bccMask   EQU $F000
-000017A9  =0000FF00               1134  negMask   EQU $FF00
-000017A9  =00000000               1135  dataMask  EQU 0
-000017A9                          1136  ***
-000017A9                          1137  
-000017A9                          1138  ***Bcc Codes***
-000017A9  =00000004               1139  CC EQU $04
-000017A9  =00000005               1140  CS EQU $05
-000017A9  =00000007               1141  EQ EQU $07
-000017A9  =0000000C               1142  GE EQU $0C
-000017A9  =0000000E               1143  GT EQU $0E
-000017A9  =00000002               1144  HI EQU $02
-000017A9  =0000000F               1145  LE EQU $0F
-000017A9  =00000003               1146  LS EQU $03
-000017A9  =0000000D               1147  LT EQU $0D
-000017A9  =0000000B               1148  MI EQU $0B
-000017A9  =00000006               1149  NE EQU $06
-000017A9  =0000000A               1150  PL EQU $0A
-000017A9  =00000008               1151  VC EQU $08
-000017A9  =00000009               1152  VS EQU $09
-000017A9  =00000000               1153  RA EQU $00 ;not really a Condition Code
-000017A9  =00000001               1154  SR EQU $01 ;not really a Condition Code
-000017A9                          1155  
-000017A9= 43 43 20 00             1156  CCm DC.B 'CC ',0
-000017AD= 43 53 20 00             1157  CSm DC.B 'CS ',0
-000017B1= 45 51 20 00             1158  EQm DC.B 'EQ ',0
-000017B5= 47 45 20 00             1159  GEm DC.B 'GE ',0
-000017B9= 47 54 20 00             1160  GTm DC.B 'GT ',0
-000017BD= 48 49 20 00             1161  HIm DC.B 'HI ',0
-000017C1= 4C 45 20 00             1162  LEm DC.B 'LE ',0
-000017C5= 4C 53 20 00             1163  LSm DC.B 'LS ',0
-000017C9= 4C 54 20 00             1164  LTm DC.B 'LT ',0
-000017CD= 4D 49 20 00             1165  MIm DC.B 'MI ',0
-000017D1= 4E 45 20 00             1166  NEm DC.B 'NE ',0
-000017D5= 50 4C 20 00             1167  PLm DC.B 'PL ',0
-000017D9= 56 43 20 00             1168  VCm DC.B 'VC ',0
-000017DD= 56 53 20 00             1169  VSm DC.B 'VS ',0
-000017E1= 52 41 20 00             1170  RAm DC.B 'RA ',0
-000017E5= 53 52 20 00             1171  SRm DC.B 'SR ',0
-000017E9                          1172  
-000017E9= 01 04 05 07 0C 0E ...   1173  BccList DC.B SR,CC,CS,EQ,GE,GT,HI,LE,LS,LT,MI,NE,PL,VC,VS,RA
-000017FA= 000017E5 000017A9 ...   1174  conditionCodeMessage DC.L SRm,CCm,CSm,EQm,GEm,GTm,HIm,LEm,LSm,LTm,MIm,NEm,PLm,VCm,VSm,RAm
-0000183A                          1175  ***
-0000183A                          1176  
-0000183A= 45 6E 74 65 72 20 ...   1177  startLocationPrompt DC.B    'Enter start location',0
-0000184F= 45 6E 74 65 72 20 ...   1178  endLocationPrompt   DC.B    'Enter end location',0
-00001862                          1179  
-00001862= 0D 0A 00                1180  clearLine  DC.B $0D,$0A,0
-00001865                          1181  
-00001865= 4A 53 52 3A 20 00       1182  jsrMessage      DC.B 'JSR: ',0
-0000186B= 52 54 53 20 00          1183  rtsMessage      DC.B 'RTS ',0
-00001870= 4E 4F 50 3A 20 00       1184  nopMessage      DC.B 'NOP: ',0 
-00001876= 4D 4F 56 45 3A 20 00    1185  moveMessage     DC.B 'MOVE: ',0
-0000187D= 42 00                   1186  bccMessage      DC.B 'B',0
-0000187F= 4E 45 47 3A 20 00       1187  negMessage      DC.B 'NEG: ',0
-00001885= 44 41 54 41 3A 20 00    1188  dataMessage     DC.B 'DATA: ',0
-0000188C                          1189  
-0000188C= 4D 4F 56 45 41 3A ...   1190  moveaMessage    DC.B 'MOVEA: ',0
-00001894                          1191  
-00001894= 28 78 78 78 29 2E ...   1192  xxxW            DC.B '(xxx).W: ',0
-0000189E= 28 78 78 78 29 2E ...   1193  xxxL            DC.B '(xxx).L: ',0
-000018A8= 23 28 64 61 74 61 ...   1194  iData           DC.B '#(data): ',0
-000018B2                          1195  
-000018B2= 41 00                   1196  letterA         DC.B 'A', 0
-000018B4= 44 00                   1197  letterD         DC.B 'D', 0
-000018B6                          1198  
-000018B6= 2B 00                   1199  plus            DC.B '+', 0
-000018B8= 2D 00                   1200  minus           DC.B '-', 0
-000018BA= 28 00                   1201  lPrn            DC.B '(', 0
-000018BC= 29 00                   1202  rPrn            DC.B ')', 0
-000018BE                          1203  
-000018BE                          1204  
-000018BE= 00000000                1205  startLocation       DC.L    0
-000018C2= 00000000                1206  endLocation         DC.L    0
-000018C6                          1207  
-000018C6                          1208  
-000018C6                          1209     
-000018C6                          1210      END    START        ; last line of source
+000014BA                           771          * The program will branch to hex_range_error if D2 is less than #41
+000014BA  B43C 0041                772          CMP.B       #65,D2              ;Hex value 41 = Ascii character value 'A'
+000014BE  6D00 0030                773          BLT         hex_range_error     ;Branch to handle range error hexidecimal
+000014C2                           774                                          ;processing
+000014C2                           775          
+000014C2  B43C 0046                776          CMP.B       #70,D2              ;Hex value 46 = Ascii character value 'F'
+000014C6  6E00 000A                777          BGT         LcaseHex            ;Branch to handle lower case hexidecimal 
+000014CA                           778                                          ;processing
+000014CA                           779          
+000014CA                           780          *a valid number was found within this range
+000014CA  0402 0037                781          SUBI.B      #55,D2              ;Change uppercase character to actual value
+000014CE  6000 001A                782          BRA         NextHexDone         ;Done parsing this byte
+000014D2                           783  
+000014D2                           784  
+000014D2                           785  *..............................................................................
+000014D2                           786  *  Check lower case values a-f by testing hexadecimal values 61-66
+000014D2                           787  *..............................................................................
+000014D2                           788  
+000014D2                           789  LcaseHex
+000014D2                           790          
+000014D2                           791          * The program will branch to hex_range_error if D2 is less than #61
+000014D2  B43C 0061                792          CMP.B       #97,D2              ;Hex value 61 = Ascii character value 'a'
+000014D6  6D00 0018                793          BLT         hex_range_error     ;Branch to handle range error hexidecimal 
+000014DA                           794                                          ;processing
+000014DA                           795  
+000014DA  B43C 0066                796          CMP.B       #102,D2              ;Hex value 66 = Ascii character value 'f'
+000014DE  6E00 0010                797          BGT         hex_range_error     ;Branch to handle range error hexidecimal 
+000014E2                           798                                          ;processing
+000014E2                           799  
+000014E2                           800          *a valid number was found within this range
+000014E2  0402 0057                801          SUBI.B      #87,D2              ;Change lowercase character to actual value
+000014E6  6000 0002                802          BRA         NextHexDone         ;Done parsing this byte
+000014EA                           803  
+000014EA                           804  NextHexDone:
+000014EA                           805  
+000014EA  E983                     806          ASL.L       #4,D3               ; Make rooom for new byte in the return register
+000014EC  D602                     807          ADD.B       D2,D3               ; Move the new byte into the return register
+000014EE  60A8                     808          BRA         NextHex             ; We're ready to parse the next byte
+000014F0                           809          
+000014F0                           810  *-------------------------------------------------------------------------------------
+000014F0                           811  * hex_range_error -  A character entered was within the valid range for a hex address
+000014F0                           812  *                 -  Load error message and display it
+000014F0                           813  *                 -  Return error condition
+000014F0                           814  *-------------------------------------------------------------------------------------
+000014F0                           815          
+000014F0                           816  hex_range_error:
+000014F0                           817  
+000014F0  43F9 0000175F            818          LEA         invCharMsg,A1       ;Load invalid range message into A1
+000014F6  2239 0000175F            819          MOVE.L      invCharMsg,D1       ;Load error length to D1
+000014FC                           820          
+000014FC  7000                     821          MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+000014FE                           822                                          ; n is D1.W with CR, LF. 
+000014FE  4E4F                     823          TRAP        #15                 ;Display the error message
+00001500  76FF                     824          MOVE.L      #-1,D3              ;Load -1 into return parameter
+00001502  6000 0002                825          BRA         NextHexReturn
+00001506                           826          
+00001506                           827  NextHexReturn:
+00001506                           828          
+00001506  4E75                     829          RTS                             ;Return      
+00001508                           830  
+00001508                           831  
+00001508                           832  *===============================================================================
+00001508                           833  * ck_addr_range - check the address input is within a valid memory address range
+00001508                           834  *                - Parsed address data into D3
+00001508                           835  *
+00001508                           836  * Parameters -
+00001508                           837  *   Input   A1      The data that needs checked for valid address.
+00001508                           838  *   Output  D3      The return value, '-1' for error
+00001508                           839  *===============================================================================
+00001508                           840  
+00001508                           841  
+00001508                           842  ck_addr_range:   
+00001508                           843  
+00001508                           844  *------------------------------------------------------------------------------
+00001508                           845  * Verify that the address entered is witin the 
+00001508                           846  * beginning range ('begin') as defined in the Equate
+00001508                           847  *------------------------------------------------------------------------------   
+00001508                           848              
+00001508  2C3C 00005001            849          MOVE.L      #begin,D6           * Load minimum starting address
+0000150E  B686                     850          CMP.L       D6,D3               * Is input at or above minimum?
+00001510  6D00 0012                851          BLT         ck_addr_range_error 
+00001514                           852          
+00001514                           853  *------------------------------------------------------------------------------
+00001514                           854  * Verify that the address entered is witin the 
+00001514                           855  * ending range ('end') as defined in the Equate
+00001514                           856  *------------------------------------------------------------------------------
+00001514                           857          
+00001514  2C3C 00FFFFFE            858          MOVE.L      #end,D6             * Load maximum starting address
+0000151A  B686                     859          CMP.L       D6,D3               * Is input at or below maximum?
+0000151C  6E00 0006                860          BGT         ck_addr_range_error 
+00001520  6000 0012                861          BRA         ck_addr_done        ;done checking
+00001524                           862          
+00001524                           863  *..............................................................................
+00001524                           864  * ck_addr_range_error -  A address entered is not within the 
+00001524                           865  *                        valid range for a hex address
+00001524                           866  *..............................................................................
+00001524                           867          
+00001524                           868  ck_addr_range_error
+00001524                           869  
+00001524  43F9 0000171A            870          LEA         invalidMsg,A1       ;Load invalid range message into A1
+0000152A                           871          
+0000152A  700D                     872          MOVE.L      #13,D0              ;Display null terminated string at (A1), 
+0000152C                           873                                          ;with CR, LF. 
+0000152C  4E4F                     874          TRAP        #15                 ;Display the error message
+0000152E  76FF                     875          MOVE.L      #-1,D3              ;Load -1 into return parameter
+00001530  6000 0002                876          BRA         ck_addr_done 
+00001534                           877  
+00001534                           878  ck_addr_done:
+00001534                           879  
+00001534  4E75                     880          RTS                             ;Return
+00001536                           881  
+00001536                           882  *******************************************************************************
+00001536                           883  *                            Effective Addressing
+00001536                           884  *******************************************************************************
+00001536                           885  
+00001536                           886  Effective_Address:
+00001536                           887  
+00001536  1C05                     888          MOVE.B      D5,D6
+00001538  E60E                     889          LSR.B       #3,D6               ;mode
+0000153A  CA3C 0007                890          And.B       #%00000111,D5       ;register
+0000153E                           891          
+0000153E  BC3C 0000                892          CMP.B       #0,D6               ;0 = Dn - Data Register Direct (000)
+00001542  6700 004A                893          BEQ         Data_Reg_Direct
+00001546                           894          
+00001546  BC3C 0001                895          CMP.B       #1,D6               ;1 = (An) - Address Register Direct (001) 
+0000154A  6700 0076                896          BEQ         Addr_Reg_Indirect
+0000154E                           897          
+0000154E  BC3C 0002                898          CMP.B       #2,D6               ;2 = (An) - Address Register Indirect (010
+00001552  6700 006E                899          BEQ         Addr_Reg_Indirect
+00001556                           900          
+00001556  BC3C 0003                901          CMP.B       #3,D6               ;3 = (An) - Address Register Indirect with Postincrement (011)
+0000155A  6700 0098                902          BEQ         Addr_Reg_Indirect_Inc
+0000155E                           903          
+0000155E  BC3C 0004                904          CMP.B       #4,D6               ;4 = (An) - Address Register Indirect with Predecrement (100)
+00001562  6700 00CE                905          BEQ         Addr_Reg_Indirect_Dec
+00001566                           906          
+00001566  BC3C 0007                907          CMP.B       #7,D6               ;7 = (An) - Address Register Indirect with Predecrement (111)
+0000156A  6700 0006                908          BEQ         Effective_Address_Other
+0000156E                           909          
+0000156E  6000 0138                910          BRA         invalidEA
+00001572                           911          
+00001572                           912  Effective_Address_Other:        
+00001572                           913          
+00001572  BA3C 0000                914          CMP.B       #0,D5               ;0 = (xxx).W - Absolute Short Addressing Mode (000)
+00001576  6700 00F8                915          BEQ Addr_Abs_Short
+0000157A                           916          
+0000157A  BA3C 0001                917          CMP.B       #1,D5               ;1 = (xxx).W - Absolute Long Addressing Mode (001)
+0000157E  6700 0104                918          BEQ Addr_Abs_Long
+00001582                           919          
+00001582  BA3C 0004                920          CMP.B       #4,D5               ;4 = #(data).W - Absolute Long Addressing Mode (100)
+00001586  6700 0110                921          BEQ Addr_Immediate_Data
+0000158A                           922          
+0000158A  6000 011C                923          BRA         invalidEA
+0000158E                           924          
+0000158E                           925  Data_Reg_Direct:                        ;case 0(0000)
+0000158E                           926  
+0000158E  43F9 000018D4            927          LEA         letterD,A1          ;output 'D' for data register
+00001594  103C 000E                928          MOVE.B      #14,D0              ;set for task to display null terminated 
+00001598  4E4F                     929          TRAP        #15                 ;string without CR, LF
+0000159A                           930                          
+0000159A  4281                     931          CLR.L       D1
+0000159C  1205                     932          MOVE.B      D5,D1               ;move register number for display into D1
+0000159E  103C 0003                933          MOVE.B      #3,D0               ;set for task to display null terminated 
+000015A2  4E4F                     934          TRAP        #15                 ;string without CR, LF
+000015A4                           935                 
+000015A4  6000 0102                936          BRA         Effective_Address_Exit  ;return
+000015A8                           937          
+000015A8                           938          
+000015A8                           939  Addr_Reg_Direct:                        ;case 1(001) - output "A" then D5
+000015A8                           940        
+000015A8  43F9 000018D2            941          LEA         letterA,A1          ;output 'A' for address register
+000015AE  103C 000E                942          MOVE.B      #14,D0              ;set for task to display null terminated 
+000015B2  4E4F                     943          TRAP        #15                 ;string without CR, LF
+000015B4                           944          
+000015B4  4281                     945          CLR.L       D1
+000015B6  1205                     946          MOVE.B      D5,D1               ;move register number for display into D1
+000015B8  103C 0003                947          MOVE.B      #3,D0               ;set for task to display null terminated 
+000015BC  4E4F                     948          TRAP        #15                 ;string without CR, LF
+000015BE                           949          
+000015BE  6000 00E8                950          BRA         Effective_Address_Exit  ;return
+000015C2                           951  
+000015C2                           952  
+000015C2                           953  Addr_Reg_Indirect:                      ;case 1(010) - output "(A" then D5, then ")"
+000015C2                           954          
+000015C2  43F9 000018DA            955          LEA         lprn,A1             ;output 'D' for data register
+000015C8  103C 000E                956          MOVE.B      #14,D0              ;set for task to display null terminated 
+000015CC  4E4F                     957          TRAP        #15                 ;string without CR, LF
+000015CE                           958  
+000015CE  43F9 000018D2            959          LEA         letterA,A1          ;output 'A' for address register
+000015D4  103C 000E                960          MOVE.B      #14,D0              ;set for task to display null terminated 
+000015D8  4E4F                     961          TRAP        #15                 ;string without CR, LF
+000015DA                           962          
+000015DA  4281                     963          CLR.L       D1
+000015DC  1205                     964          MOVE.B      D5,D1               ;move register number for display into D1
+000015DE  103C 0003                965          MOVE.B      #3,D0               ;set for task to display null terminated 
+000015E2  4E4F                     966          TRAP        #15                 ;string without CR, LF
+000015E4                           967  
+000015E4  43F9 000018DC            968          LEA         rprn,A1             ;output 'D' for data register
+000015EA  103C 000E                969          MOVE.B      #14,D0              ;set for task to display null terminated 
+000015EE  4E4F                     970          TRAP        #15                 ;string without CR, LF
+000015F0                           971          
+000015F0  6000 00B6                972          BRA         Effective_Address_Exit  ;return
+000015F4                           973  
+000015F4                           974                 
+000015F4                           975  Addr_Reg_Indirect_Inc                   ;3 = (An)+ - Address Register Indirect with Postincrement (011)
+000015F4                           976  
+000015F4  43F9 000018DA            977          LEA         lprn,A1             ;output 'D' for data register
+000015FA  103C 000E                978          MOVE.B      #14,D0              ;set for task to display null terminated 
+000015FE  4E4F                     979          TRAP        #15                 ;string without CR, LF
+00001600                           980  
+00001600  43F9 000018D2            981          LEA         letterA,A1          ;output 'A' for address register
+00001606  103C 000E                982          MOVE.B      #14,D0              ;set for task to display null terminated 
+0000160A  4E4F                     983          TRAP        #15                 ;string without CR, LF
+0000160C                           984          
+0000160C  4281                     985          CLR.L       D1
+0000160E  1205                     986          MOVE.B      D5,D1               ;move register number for display into D1
+00001610  103C 0003                987          MOVE.B      #3,D0               ;set for task to display null terminated 
+00001614  4E4F                     988          TRAP        #15                 ;string without CR, LF
+00001616                           989  
+00001616  43F9 000018DC            990          LEA         rprn,A1             ;output 'D' for data register
+0000161C  103C 000E                991          MOVE.B      #14,D0              ;set for task to display null terminated 
+00001620  4E4F                     992          TRAP        #15                 ;string without CR, LF
+00001622                           993          
+00001622  43F9 000018D6            994          LEA         plus,A1             ;output 'D' for data register
+00001628  103C 000E                995          MOVE.B      #14,D0              ;set for task to display null terminated 
+0000162C  4E4F                     996          TRAP        #15                 ;string without CR, LF
+0000162E                           997          
+0000162E  6000 0078                998          BRA         Effective_Address_Exit  ;return
+00001632                           999  
+00001632                          1000  Addr_Reg_Indirect_Dec                   ;4 = –(An) - Address Register Indirect with Predecrement (100)
+00001632                          1001  
+00001632  43F9 000018D8           1002          LEA         minus,A1            ;output '-' for Predecrement
+00001638  103C 000E               1003          MOVE.B      #14,D0              ;set for task to display null terminated 
+0000163C  4E4F                    1004          TRAP        #15                 ;string without CR, LF
+0000163E                          1005  
+0000163E  43F9 000018DA           1006          LEA         lprn,A1             ;output 'D' for data register
+00001644  103C 000E               1007          MOVE.B      #14,D0              ;set for task to display null terminated 
+00001648  4E4F                    1008          TRAP        #15                 ;string without CR, LF
+0000164A                          1009  
+0000164A  43F9 000018D2           1010          LEA         letterA,A1          ;output 'A' for address register
+00001650  103C 000E               1011          MOVE.B      #14,D0              ;set for task to display null terminated 
+00001654  4E4F                    1012          TRAP        #15                 ;string without CR, LF
+00001656                          1013          
+00001656  4281                    1014          CLR.L       D1
+00001658  1205                    1015          MOVE.B      D5,D1               ;move register number for display into D1
+0000165A  103C 0003               1016          MOVE.B      #3,D0               ;set for task to display null terminated 
+0000165E  4E4F                    1017          TRAP        #15                 ;string without CR, LF
+00001660                          1018  
+00001660  43F9 000018DC           1019          LEA         rprn,A1             ;output 'D' for data register
+00001666  103C 000E               1020          MOVE.B      #14,D0              ;set for task to display null terminated 
+0000166A  4E4F                    1021          TRAP        #15                 ;string without CR, LF
+0000166C                          1022          
+0000166C  6000 003A               1023          BRA         Effective_Address_Exit  ;return
+00001670                          1024  
+00001670                          1025          
+00001670                          1026                         
+00001670                          1027  Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing Mode (000)
+00001670                          1028          
+00001670                          1029          
+00001670  43F9 000018B4           1030          LEA         xxxW,A1             ;output 'D' for data register
+00001676  103C 000E               1031          MOVE.B      #14,D0              ;set for task to display null terminated 
+0000167A  4E4F                    1032          TRAP        #15                 ;string without CR, LF
+0000167C                          1033  
+0000167C  548B                    1034          ADDA.L      #word,A3
+0000167E                          1035          
+0000167E                          1036          ;print word (A3)
+0000167E                          1037          ;MOVE.W      A3,(A1)
+0000167E                          1038          ;MOVE.B      #14,D0              ;set for task to display null terminated 
+0000167E                          1039          ;TRAP        #15                 ;string without CR, LF
+0000167E                          1040          
+0000167E  5487                    1041          ADDI.L      #word,D7 
+00001680  6000 0026               1042          BRA         Effective_Address_Exit  ;return
+00001684                          1043                         
+00001684                          1044  Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing Mode (001)
+00001684                          1045          
+00001684  43F9 000018BE           1046          LEA         xxxL,A1             ;output 'D' for data register
+0000168A  103C 000E               1047          MOVE.B      #14,D0              ;set for task to display null terminated 
+0000168E  4E4F                    1048          TRAP        #15                 ;string without CR, LF
+00001690                          1049  
+00001690  548B                    1050          ADDA.L      #word,A3
+00001692                          1051          
+00001692                          1052          ;print long (A3)
+00001692                          1053          ;MOVE.L      A3,(A1)
+00001692                          1054          ;MOVE.B      #14,D0              ;set for task to display null terminated 
+00001692                          1055          ;TRAP        #15                 ;string without CR, LF
+00001692                          1056          
+00001692  5887                    1057          ADDI.L      #long,D7
+00001694  6000 0012               1058          BRA         Effective_Address_Exit  ;return
+00001698                          1059                         
+00001698                          1060  Addr_Immediate_Data                     ;4 = #(data) - Absolute Long Addressing Mode (100)
+00001698                          1061  
+00001698  43F9 000018C8           1062          LEA         iData,A1            ;output 'D' for data register
+0000169E  103C 000E               1063          MOVE.B      #14,D0              ;set for task to display null terminated 
+000016A2  4E4F                    1064          TRAP        #15                 ;string without CR, LF
+000016A4                          1065          
+000016A4                          1066          *need another input param for size
+000016A4  6000 0002               1067          BRA         Effective_Address_Exit  ;return
+000016A8                          1068  
+000016A8                          1069  invalidEA:
+000016A8                          1070  
+000016A8                          1071          ;do something
+000016A8                          1072   
+000016A8                          1073  Effective_Address_Exit:     
+000016A8                          1074  
+000016A8  4E75                    1075          RTS                             ;return
+000016AA                          1076  
+000016AA                          1077  switchModeAndReg:
+000016AA                          1078  ***
+000016AA                          1079  * Assumed in D2
+000016AA                          1080  *
+000016AA                          1081  * Assumed that they are in least significant byte:
+000016AA                          1082  *
+000016AA                          1083  *            _this_
+000016AA                          1084  *           /      \
+000016AA                          1085  *  ........ ........
+000016AA                          1086  *  \                /
+000016AA                          1087  *   -----word-------
+000016AA                          1088  *
+000016AA                          1089  *  and that in that byte they are ordered:
+000016AA                          1090  *
+000016AA                          1091  *       ........   
+000016AA                          1092  *       \/\_/\_/
+000016AA                          1093  *      /  /    \
+000016AA                          1094  *    /   /      \
+000016AA                          1095  * dont  one    other
+000016AA                          1096  * care
+000016AA                          1097  *
+000016AA                          1098  * after they will be
+000016AA                          1099  *
+000016AA                          1100  *       ........   
+000016AA                          1101  *       \/\_/\_/
+000016AA                          1102  *      /  /    \
+000016AA                          1103  *    /   /      \
+000016AA                          1104  * dont other    one
+000016AA                          1105  * care
+000016AA                          1106  *** 
+000016AA  0283 00000000           1107          ANDI.L #0,D3 ;clear D3
+000016B0  1602                    1108          MOVE.B D2,D3 ;copy to D3
+000016B2  E70B                    1109          LSL.B  #3,D3 
+000016B4  E60A                    1110          LSR.B  #3,D2
+000016B6  D403                    1111          ADD.B  D3,D2
+000016B8  4E75                    1112          RTS
+000016BA                          1113  
+000016BA                          1114          
+000016BA                          1115  *==============================================================================
+000016BA                          1116  *                            variables and constants
+000016BA                          1117  *==============================================================================
+000016BA                          1118  
+000016BA                          1119  
+000016BA                          1120  ***initial user prompt stuff        
+000016BA= 45 6E 74 65 72 20 ...   1121  slPrompt        DC.B    'Enter a starting address from $0 to $00FFFFFE: $',0
+000016EB= 45 6E 74 65 72 20 ...   1122  elPrompt        DC.B    'Enter a ending address from $0 to $00FFFFFE: $',0
+0000171A                          1123  
+0000171A= 20 41 64 64 72 65 ...   1124  invalidMsg      DC.B    ' Address entered is not within the specified range! Please try again',0
+0000175F= 20 41 20 43 68 61 ...   1125  invCharMsg      DC.B    ' A Character entered is not a valid address character! Please try again',0
+000017A7                          1126  
+000017A7= 20 59 6F 75 20 6D ...   1127  even_msg        DC.B    ' You must enter an even address!'
+000017C7                          1128  
+000017C7= 20                      1129  spc             DC.B    ' '
+000017C8= 01                      1130  spc_len         DC.B    spc_len-spc
+000017C9                          1131  ***
+000017C9                          1132  
+000017C9                          1133  
+000017C9                          1134  
+000017C9                          1135  ***list of OP codes
+000017C9  =00004E80               1136  jsrInstruction   EQU %0100111010000000
+000017C9  =00004E75               1137  rtsInstruction   EQU %0100111001110101
+000017C9  =00004E71               1138  NoOpInstruction  EQU %0100111001110001
+000017C9  =00000000               1139  moveInstruction  EQU 0
+000017C9  =00006000               1140  bccInstruction   EQU %0110000000000000
+000017C9  =00004400               1141  negInstruction   EQU %0100010000000000
+000017C9  =00000000               1142  dataInstruction  EQU 0
+000017C9                          1143  
+000017C9                          1144  ***
+000017C9                          1145  
+000017C9                          1146  ***list of OP masks
+000017C9  =0000FFC0               1147  jsrMask   EQU %1111111111000000
+000017C9  =0000FFFF               1148  rtsMask   EQU $FFFF
+000017C9  =0000FFFF               1149  NoOpMask  EQU $FFFF
+000017C9  =0000C000               1150  moveMask  EQU $C000
+000017C9  =0000F000               1151  bccMask   EQU $F000
+000017C9  =0000FF00               1152  negMask   EQU $FF00
+000017C9  =00000000               1153  dataMask  EQU 0
+000017C9                          1154  ***
+000017C9                          1155  
+000017C9                          1156  ***Bcc Codes***
+000017C9  =00000004               1157  CC EQU $04
+000017C9  =00000005               1158  CS EQU $05
+000017C9  =00000007               1159  EQ EQU $07
+000017C9  =0000000C               1160  GE EQU $0C
+000017C9  =0000000E               1161  GT EQU $0E
+000017C9  =00000002               1162  HI EQU $02
+000017C9  =0000000F               1163  LE EQU $0F
+000017C9  =00000003               1164  LS EQU $03
+000017C9  =0000000D               1165  LT EQU $0D
+000017C9  =0000000B               1166  MI EQU $0B
+000017C9  =00000006               1167  NE EQU $06
+000017C9  =0000000A               1168  PL EQU $0A
+000017C9  =00000008               1169  VC EQU $08
+000017C9  =00000009               1170  VS EQU $09
+000017C9  =00000000               1171  RA EQU $00 ;not really a Condition Code
+000017C9  =00000001               1172  SR EQU $01 ;not really a Condition Code
+000017C9                          1173  
+000017C9= 43 43 20 00             1174  CCm DC.B 'CC ',0
+000017CD= 43 53 20 00             1175  CSm DC.B 'CS ',0
+000017D1= 45 51 20 00             1176  EQm DC.B 'EQ ',0
+000017D5= 47 45 20 00             1177  GEm DC.B 'GE ',0
+000017D9= 47 54 20 00             1178  GTm DC.B 'GT ',0
+000017DD= 48 49 20 00             1179  HIm DC.B 'HI ',0
+000017E1= 4C 45 20 00             1180  LEm DC.B 'LE ',0
+000017E5= 4C 53 20 00             1181  LSm DC.B 'LS ',0
+000017E9= 4C 54 20 00             1182  LTm DC.B 'LT ',0
+000017ED= 4D 49 20 00             1183  MIm DC.B 'MI ',0
+000017F1= 4E 45 20 00             1184  NEm DC.B 'NE ',0
+000017F5= 50 4C 20 00             1185  PLm DC.B 'PL ',0
+000017F9= 56 43 20 00             1186  VCm DC.B 'VC ',0
+000017FD= 56 53 20 00             1187  VSm DC.B 'VS ',0
+00001801= 52 41 20 00             1188  RAm DC.B 'RA ',0
+00001805= 53 52 20 00             1189  SRm DC.B 'SR ',0
+00001809                          1190  
+00001809= 01 04 05 07 0C 0E ...   1191  BccList DC.B SR,CC,CS,EQ,GE,GT,HI,LE,LS,LT,MI,NE,PL,VC,VS,RA
+0000181A= 00001805 000017C9 ...   1192  conditionCodeMessage DC.L SRm,CCm,CSm,EQm,GEm,GTm,HIm,LEm,LSm,LTm,MIm,NEm,PLm,VCm,VSm,RAm
+0000185A                          1193  ***
+0000185A                          1194  
+0000185A= 45 6E 74 65 72 20 ...   1195  startLocationPrompt DC.B    'Enter start location',0
+0000186F= 45 6E 74 65 72 20 ...   1196  endLocationPrompt   DC.B    'Enter end location',0
+00001882                          1197  
+00001882= 0D 0A 00                1198  clearLine  DC.B $0D,$0A,0
+00001885                          1199  
+00001885= 4A 53 52 3A 20 00       1200  jsrMessage      DC.B 'JSR: ',0
+0000188B= 52 54 53 20 00          1201  rtsMessage      DC.B 'RTS ',0
+00001890= 4E 4F 50 3A 20 00       1202  nopMessage      DC.B 'NOP: ',0 
+00001896= 4D 4F 56 45 3A 20 00    1203  moveMessage     DC.B 'MOVE: ',0
+0000189D= 42 00                   1204  bccMessage      DC.B 'B',0
+0000189F= 4E 45 47 3A 20 00       1205  negMessage      DC.B 'NEG: ',0
+000018A5= 44 41 54 41 3A 20 00    1206  dataMessage     DC.B 'DATA: ',0
+000018AC                          1207  
+000018AC= 4D 4F 56 45 41 3A ...   1208  moveaMessage    DC.B 'MOVEA: ',0
+000018B4                          1209  
+000018B4= 28 78 78 78 29 2E ...   1210  xxxW            DC.B '(xxx).W: ',0
+000018BE= 28 78 78 78 29 2E ...   1211  xxxL            DC.B '(xxx).L: ',0
+000018C8= 23 28 64 61 74 61 ...   1212  iData           DC.B '#(data): ',0
+000018D2                          1213  
+000018D2= 41 00                   1214  letterA         DC.B 'A', 0
+000018D4= 44 00                   1215  letterD         DC.B 'D', 0
+000018D6                          1216  
+000018D6= 2B 00                   1217  plus            DC.B '+', 0
+000018D8= 2D 00                   1218  minus           DC.B '-', 0
+000018DA= 28 00                   1219  lPrn            DC.B '(', 0
+000018DC= 29 00                   1220  rPrn            DC.B ')', 0
+000018DE                          1221  
+000018DE                          1222  
+000018DE= 00000000                1223  startLocation       DC.L    0
+000018E2= 00000000                1224  endLocation         DC.L    0
+000018E6                          1225  
+000018E6                          1226  
+000018E6                          1227     
+000018E6                          1228      END    START        ; last line of source
 
 No errors detected
 No warnings generated
@@ -1220,167 +1238,170 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-ADDR_ABS_LONG       1664
-ADDR_ABS_SHORT      1650
-ADDR_IMMEDIATE_DATA  1678
-ADDR_REG_DIRECT     1588
-ADDR_REG_INDIRECT   15A2
-ADDR_REG_INDIRECT_DEC  1612
-ADDR_REG_INDIRECT_INC  15D4
-BCC                 135A
-BCCBYTE             13AC
-BCCDONE             13C2
+ADDRESS_DONE        1424
+ADDRESS_EXIT        141E
+ADDR_ABS_LONG       1684
+ADDR_ABS_SHORT      1670
+ADDR_IMMEDIATE_DATA  1698
+ADDR_REG_DIRECT     15A8
+ADDR_REG_INDIRECT   15C2
+ADDR_REG_INDIRECT_DEC  1632
+ADDR_REG_INDIRECT_INC  15F4
+BCC                 1304
+BCCBYTE             1356
+BCCDONE             136C
 BCCINSTRUCTION      6000
-BCCLIST             17E9
-BCCLONG             13BA
+BCCLIST             1809
+BCCLONG             1364
 BCCMASK             F000
-BCCMESSAGE          187D
-BCCWORD             13B2
+BCCMESSAGE          189D
+BCCWORD             135C
 BEGIN               5001
-BEGIN_ADDRESS       1008
+BEGIN_ADDRESS       13B0
 BYTE                1
 CC                  4
-CCM                 17A9
-CHECKCC             1370
-CHECKMOVEADEST      1306
-CHECKMOVEDEST       1264
-CHECKOPCODE         1092
-CK_ADDR_DONE        1514
-CK_ADDR_RANGE       14E8
-CK_ADDR_RANGE_ERROR  1504
-CK_BOUNDRY          142C
-CK_BOUNDRY_ERROR    144E
-CK_SIZE_ERROR       1462
-CLEARLINE           1862
-CONDITIONCODEMESSAGE  17FA
+CCM                 17C9
+CHECKCC             131A
+CHECKMOVEADEST      12B0
+CHECKMOVEDEST       1212
+CHECKOPCODE         1040
+CK_ADDR_DONE        1534
+CK_ADDR_RANGE       1508
+CK_ADDR_RANGE_ERROR  1524
+CK_BOUNDRY          144C
+CK_BOUNDRY_ERROR    146E
+CK_SIZE_ERROR       1482
+CLEARLINE           1882
+CONDITIONCODEMESSAGE  181A
 CS                  5
-CSM                 17AD
+CSM                 17CD
 DATAINSTRUCTION     0
 DATAMASK            0
-DATAMESSAGE         1885
-DATA_REG_DIRECT     156E
-EFFECTIVE_ADDRESS   1516
-EFFECTIVE_ADDRESS_EXIT  1688
-EFFECTIVE_ADDRESS_OTHER  1552
-ELPROMPT            16CB
+DATAMESSAGE         18A5
+DATA_REG_DIRECT     158E
+EFFECTIVE_ADDRESS   1536
+EFFECTIVE_ADDRESS_EXIT  16A8
+EFFECTIVE_ADDRESS_OTHER  1572
+ELPROMPT            16EB
 END                 FFFFFE
-ENDLOCATION         18C2
-ENDLOCATIONPROMPT   184F
-END_ADDRESS         1054
-ENTER_ADDR_EDIT_ALL  1406
-ENTER_ADDR_EDIT_ALL_EXIT  142A
+ENDLOCATION         18E2
+ENDLOCATIONPROMPT   186F
+END_ADDRESS         13F4
+ENTER_ADDR_EDIT_ALL  1426
+ENTER_ADDR_EDIT_ALL_EXIT  144A
 EQ                  7
-EQM                 17B1
-EVEN_MSG            1787
-FALSEPOSITIVE       10B2
+EQM                 17D1
+EVEN_MSG            17A7
+FALSEPOSITIVE       1060
 FARLABEL            FFE
-FIN                 1402
-FOUNDCC             1382
+FIN                 13AC
+FOUNDCC             132C
 GE                  C
-GEM                 17B5
+GEM                 17D5
 GT                  E
-GTM                 17B9
-HEX_RANGE_ERROR     14D0
+GTM                 17D9
+HEX_RANGE_ERROR     14F0
 HI                  2
-HIM                 17BD
-IDATA               18A8
-INSTLABELLIST       10F4
-INSTMASKLIST        10E6
-INSTOPLIST          10D8
-INVALIDEA           1688
-INVALIDMSG          16FA
-INVCHARMSG          173F
-JSR                 11AC
-JSRBODY             11D4
-JSRDONE             11EC
-JSREA               11A4
-JSREAMASKS          11A8
+HIM                 17DD
+IDATA               18C8
+INSTLABELLIST       10A2
+INSTMASKLIST        1094
+INSTOPLIST          1086
+INVALIDEA           16A8
+INVALIDMSG          171A
+INVCHARMSG          175F
+JSR                 115A
+JSRBODY             1182
+JSRDONE             119A
+JSREA               1152
+JSREAMASKS          1156
 JSRINSTRUCTION      4E80
 JSRMASK             FFC0
-JSRMESSAGE          1865
-LCASEHEX            14B2
+JSRMESSAGE          1885
+LCASEHEX            14D2
 LE                  F
-LEM                 17C1
-LETTERA             18B2
-LETTERD             18B4
+LEM                 17E1
+LETTERA             18D2
+LETTERD             18D4
 LONG                4
-LPRN                18BA
+LPRN                18DA
 LS                  3
-LSM                 17C5
+LSM                 17E5
 LT                  D
-LTM                 17C9
-MAIN_LOOP           1076
-MATCH               10B8
+LTM                 17E9
+MAIN_LOOP           1024
+MATCH               1066
 MI                  B
-MIM                 17CD
-MINUS               18B8
-MOVE                123C
-MOVEA               12DE
-MOVEABODY           1334
-MOVEADESTEA         12DA
-MOVEADESTEAMASKS    12DC
-MOVEAMESSAGE        188C
-MOVEBODY            1292
-MOVEDESTEA          122E
-MOVEDESTEAMASKS     1235
+MIM                 17ED
+MINUS               18D8
+MOVE                11EA
+MOVEA               1288
+MOVEABODY           12DE
+MOVEADESTEA         1284
+MOVEADESTEAMASKS    1286
+MOVEAMESSAGE        18AC
+MOVEBODY            1240
+MOVEDESTEA          11DC
+MOVEDESTEAMASKS     11E3
 MOVEINSTRUCTION     0
 MOVEMASK            C000
-MOVEMESSAGE         1876
-MOVESOURCEEA        121C
-MOVESOURCEEAMASKS   1225
+MOVEMESSAGE         1896
+MOVESOURCEEA        11CA
+MOVESOURCEEAMASKS   11D3
 NE                  6
-NEG                 1146
-NEGBODY             116E
-NEGDONE             1194
-NEGEA               1136
-NEGEAMASKS          113E
+NEG                 10F4
+NEGBODY             111C
+NEGDONE             1142
+NEGEA               10E4
+NEGEAMASKS          10EC
 NEGINSTRUCTION      4400
 NEGMASK             FF00
-NEGMESSAGE          187F
-NEM                 17D1
-NEXTHEX             1478
-NEXTHEXDONE         14CA
-NEXTHEXRETURN       14E6
+NEGMESSAGE          189F
+NEM                 17F1
+NEXTHEX             1498
+NEXTHEXDONE         14EA
+NEXTHEXRETURN       1506
 NOOPINSTRUCTION     4E71
 NOOPMASK            FFFF
-NOP                 11FC
-NOPMESSAGE          1870
-PARSEHEXSTRING      1476
+NOP                 11AA
+NOPMESSAGE          1890
+PARSEHEXSTRING      1496
 PL                  A
-PLM                 17D5
-PLUS                18B6
+PLM                 17F5
+PLUS                18D6
 PRGORG              1000
+PROMPT_USER         1014
 RA                  0
-RAM                 17E1
-RPRN                18BC
-RTS                 120C
+RAM                 1801
+RPRN                18DC
+RTS                 11BA
 RTSINSTRUCTION      4E75
 RTSMASK             FFFF
-RTSMESSAGE          186B
-SLPROMPT            169A
-SNIPPET             1110
-SNIPPETEND          1132
-SPC                 17A7
-SPC_LEN             17A8
+RTSMESSAGE          188B
+SLPROMPT            16BA
+SNIPPET             10BE
+SNIPPETEND          10E0
+SPC                 17C7
+SPC_LEN             17C8
 SR                  1
-SRM                 17E5
+SRM                 1805
 STACK               5000
 START               1000
-STARTLOCATION       18BE
-STARTLOCATIONPROMPT  183A
-SWITCHMODEANDREG    168A
-UCASEHEX            149A
-UNKNOWNOPCODE       13DC
-VALIDJSRMODES       11AE
-VALIDMOVEADESTMODES  1308
-VALIDMOVEASOURCEMODES  12E0
-VALIDMOVEDESTMODES  1266
-VALIDMOVESOURCEMODES  123E
-VALIDNEGMODES       1148
+STARTLOCATION       18DE
+STARTLOCATIONPROMPT  185A
+SWITCHMODEANDREG    16AA
+UCASEHEX            14BA
+UNKNOWNOPCODE       1386
+VALIDJSRMODES       115C
+VALIDMOVEADESTMODES  12B2
+VALIDMOVEASOURCEMODES  128A
+VALIDMOVEDESTMODES  1214
+VALIDMOVESOURCEMODES  11EC
+VALIDNEGMODES       10F6
 VC                  8
-VCM                 17D9
+VCM                 17F9
 VS                  9
-VSM                 17DD
+VSM                 17FD
 WORD                2
-XXXL                189E
-XXXW                1894
+XXXL                18BE
+XXXW                18B4
