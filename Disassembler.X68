@@ -116,9 +116,9 @@ match:
         RTS
         
 
-instOPList DC.W jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList DC.L JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+instOPList DC.W oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+instMaskList DC.W oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList DC.L ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -131,7 +131,10 @@ snippet:
          MOVE.W $8500,D1
          ADDI.W #30,D5
          RTS
-         jsr $54
+         JSR $54
+         CMPI #3,D1
+         ORI  #3,D1
+
          
 snippetEnd:
          SIMHALT
@@ -192,6 +195,131 @@ NEGdone:
         TRAP    #15
         MOVEQ.L #0,D0
         RTS
+        
+   
+ORI:            
+     
+        MOVEQ.L #0, D0 ;clear D0
+        
+validOriModes:
+        
+        
+        LEA cmpiEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        LEA cmpiEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ oriBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validOriModes ;check for next mode
+        
+oriBody:
+
+
+        MOVE.W  D1,D2 ;copy inst to D2
+        AND.W  #%0000000011000000,D2 ;mask word for size
+        CMPI.W #%0000000011000000,D2 ;11 is the only non valid size
+        BEQ falsePositive
+
+        LEA     oriMessage,A1  ;move string for NEG info
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        ;go to Effective_Address for immediate data
+        MOVE.B #%00111100,D2
+        BSR Effective_Address
+        
+        MOVE.W D1,D2 ;copy inst to D2
+        AND #%000000000111111,D2 ;and out everything but modes and regs
+        MOVE.B D2,D5 ; copy to D5 for following BSR
+        
+        BSR     Effective_Address
+        
+              
+        
+oridone:
+
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        MOVEQ.L #0,D0
+        RTS
+
+        
+        
+cmpiEA        DC.B %100000,%011000,%000000,%010000, %111000, %111001,0
+cmpiEAmasks   DC.B %111000,%111000,%111000,%111000, %111111, %111111,0
+   
+CMPI:            
+     
+        MOVEQ.L #0, D0 ;clear D0
+        
+validCmpiModes:
+        
+        
+        LEA cmpiEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        LEA cmpiEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ CMPIBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validCmpiModes ;check for next mode
+        
+CMPIBody:
+
+
+        MOVE.W  D1,D2 ;copy inst to D2
+        AND.W  #%0000000011000000,D2 ;mask word for size
+        CMPI.W #%0000000011000000,D2 ;11 is the only non valid size
+        BEQ falsePositive
+
+        LEA     cmpiMessage,A1  ;move string for NEG info
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        ;go to Effective_Address for immediate data
+        MOVE.B #%00111100,D2
+        BSR Effective_Address
+        
+        MOVE.W D1,D2 ;copy inst to D2
+        AND #%000000000111111,D2 ;and out everything but modes and regs
+        MOVE.B D2,D5 ; copy to D5 for following BSR
+        
+        BSR     Effective_Address
+        
+              
+        
+CMPidone:
+
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        MOVEQ.L #0,D0
+        RTS
+
         
 JsrEA        DC.B %010000, %111000, %111001,0
 JsrEAmasks   DC.B %111000, %111111, %111111,0
@@ -313,7 +441,7 @@ validMoveDestModes:
         BEQ falsePositive ;branch if it is
         
         MOVE.W D1,D2 ;copy instruction to D2
-        LSR.W #5,D2  ;move mode
+        LSR.W #6,D2  ;move mode
         BSR switchModeAndReg ;switch register and mode
         AND.B D5,D2  ;mask D2
         
@@ -347,6 +475,7 @@ moveBody
         
         MOVE.W  D1,D2 ;check dest mode
         LSR.W   #6,D2
+        BSR  switchModeAndReg
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
         BSR     Effective_Address
@@ -1104,6 +1233,7 @@ switchModeAndReg:
 * dont other    one
 * care
 *** 
+        AndI.B #%00111111,D2 ;remove unwanted bits from D2
         ANDI.L #0,D3 ;clear D3
         MOVE.B D2,D3 ;copy to D3
         LSL.B  #3,D3 
@@ -1133,6 +1263,9 @@ spc_len         DC.B    spc_len-spc
 
 
 ***list of OP codes
+
+oriInstruction   EQU 0
+cmpiInstruction  EQU %0000110000000000
 jsrInstruction   EQU %0100111010000000
 rtsInstruction   EQU %0100111001110101
 NoOpInstruction  EQU %0100111001110001
@@ -1144,6 +1277,9 @@ dataInstruction  EQU 0
 ***
 
 ***list of OP masks
+
+oriMask   EQU %1111111100000000
+cmpiMask  EQU %1111111100000000
 jsrMask   EQU %1111111111000000
 rtsMask   EQU $FFFF
 NoOpMask  EQU $FFFF
@@ -1197,6 +1333,8 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+oriMessage      DC.B 'ORI: ',0
+cmpiMessage     DC.B 'CMPI: ',0
 jsrMessage      DC.B 'JSR: ',0
 rtsMessage      DC.B 'RTS ',0
 nopMessage      DC.B 'NOP: ',0 
@@ -1227,6 +1365,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
