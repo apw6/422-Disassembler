@@ -50,6 +50,8 @@ prompt_user:
         BEQ         fin                 ;Yes, then exit
         
         BRA         main_Loop
+        ;BSR         process_op_codes
+        BRA         prompt_user
                 
 ******************************************************************************
 *                   Begin processing OP Codes
@@ -183,7 +185,7 @@ NegBody:
         AND #%000000000111111,D2
         MOVE.B D2,D5
         
-        BSR     Effective_Address
+        BSR     Get_Effective_Address
         
               
         
@@ -360,7 +362,7 @@ JsrBody:
         AND #%000000000111111,D2 ;and out everything but modes and regs
         MOVE.B D2,D5 ; copy to D5 for following BSR
         
-        BSR     Effective_Address
+        BSR     Get_Effective_Address
         
               
         
@@ -469,7 +471,7 @@ moveBody
         MOVE.W  D1,D2 ;check source mode
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
-        BSR     Effective_Address
+        BSR     Get_Effective_Address
         
         ;print separator
         
@@ -478,7 +480,7 @@ moveBody
         BSR  switchModeAndReg
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
-        BSR     Effective_Address
+        BSR     Get_Effective_Address
         
         
         
@@ -659,6 +661,10 @@ fin
 
 *******************************************************************************
 *                            SUB ROUTINES
+*******************************************************************************
+
+*******************************************************************************
+*                          IO ROLE ROUTINES
 *******************************************************************************
 
 *==========================================================================
@@ -1009,10 +1015,23 @@ ck_addr_done:
         RTS                             ;Return
 
 *******************************************************************************
-*                            Effective Addressing
+*                          OP CODE ROLE ROUTINES
 *******************************************************************************
 
-Effective_Address:
+process_op_codes:
+
+
+
+process_op_codes_exit:
+
+        RTS
+
+
+*******************************************************************************
+*                    Effective Addressing ROLE ROUTINES
+*******************************************************************************
+
+Get_Effective_Address:
 
         MOVE.B      D5,D6
         LSR.B       #3,D6               ;mode
@@ -1034,11 +1053,11 @@ Effective_Address:
         BEQ         Addr_Reg_Indirect_Dec
         
         CMP.B       #7,D6               ;7 = (An) - Address Register Indirect with Predecrement (111)
-        BEQ         Effective_Address_Other
+        BEQ         Get_Effective_Address_Other
         
         BRA         invalidEA
         
-Effective_Address_Other:        
+Get_Effective_Address_Other:        
         
         CMP.B       #0,D5               ;0 = (xxx).W - Absolute Short Addressing Mode (000)
         BEQ Addr_Abs_Short
@@ -1062,7 +1081,7 @@ Data_Reg_Direct:                        ;case 0(0000)
         MOVE.B      #3,D0               ;set for task to display null terminated 
         TRAP        #15                 ;string without CR, LF
                
-        BRA         Effective_Address_Exit  ;return
+        BRA         Get_Effective_Address_Exit  ;return
         
         
 Addr_Reg_Direct:                        ;case 1(001) - output "A" then D5
@@ -1076,7 +1095,7 @@ Addr_Reg_Direct:                        ;case 1(001) - output "A" then D5
         MOVE.B      #3,D0               ;set for task to display null terminated 
         TRAP        #15                 ;string without CR, LF
         
-        BRA         Effective_Address_Exit  ;return
+        BRA         Get_Effective_Address_Exit  ;return
 
 
 Addr_Reg_Indirect:                      ;case 1(010) - output "(A" then D5, then ")"
@@ -1098,7 +1117,7 @@ Addr_Reg_Indirect:                      ;case 1(010) - output "(A" then D5, then
         MOVE.B      #14,D0              ;set for task to display null terminated 
         TRAP        #15                 ;string without CR, LF
         
-        BRA         Effective_Address_Exit  ;return
+        BRA         Get_Effective_Address_Exit  ;return
 
                
 Addr_Reg_Indirect_Inc                   ;3 = (An)+ - Address Register Indirect with Postincrement (011)
@@ -1124,7 +1143,7 @@ Addr_Reg_Indirect_Inc                   ;3 = (An)+ - Address Register Indirect w
         MOVE.B      #14,D0              ;set for task to display null terminated 
         TRAP        #15                 ;string without CR, LF
         
-        BRA         Effective_Address_Exit  ;return
+        BRA         Get_Effective_Address_Exit  ;return
 
 Addr_Reg_Indirect_Dec                   ;4 = –(An) - Address Register Indirect with Predecrement (100)
 
@@ -1149,8 +1168,7 @@ Addr_Reg_Indirect_Dec                   ;4 = –(An) - Address Register Indirect w
         MOVE.B      #14,D0              ;set for task to display null terminated 
         TRAP        #15                 ;string without CR, LF
         
-        BRA         Effective_Address_Exit  ;return
-
+        BRA         Get_Effective_Address_Exit  ;return
         
                        
 Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing Mode (000)
@@ -1168,7 +1186,7 @@ Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing
         ;TRAP        #15                 ;string without CR, LF
         
         ADDI.L      #word,D7 
-        BRA         Effective_Address_Exit  ;return
+        BRA         Get_Effective_Address_Exit  ;return
                        
 Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing Mode (001)
         
@@ -1184,7 +1202,7 @@ Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing 
         ;TRAP        #15                 ;string without CR, LF
         
         ADDI.L      #long,D7
-        BRA         Effective_Address_Exit  ;return
+        BRA         Get_Effective_Address_Exit  ;return
                        
 Addr_Immediate_Data                     ;4 = #(data) - Absolute Long Addressing Mode (100)
 
@@ -1193,13 +1211,13 @@ Addr_Immediate_Data                     ;4 = #(data) - Absolute Long Addressing 
         TRAP        #15                 ;string without CR, LF
         
         *need another input param for size
-        BRA         Effective_Address_Exit  ;return
+        BRA         Get_Effective_Address_Exit  ;return
 
 invalidEA:
 
         ;do something
  
-Effective_Address_Exit:     
+Get_Effective_Address_Exit:     
 
         RTS                             ;return
 
