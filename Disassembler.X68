@@ -136,9 +136,9 @@ match:
         RTS
         
 
-instOPList DC.W movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList DC.L MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+instOPList DC.W addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+instMaskList DC.W addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList DC.L ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -155,11 +155,148 @@ snippet:
          CMPI #3,D1
          ORI  #3,D1
          MOVEM.L A3-A4,-(SP)
+         ADD.B D1,D2
+         ADD.B #10,D3
 
          
 snippetEnd:
          SIMHALT
     
+addDestEA        DC.B %010000,%011000,%100000,%111000,%111001,0
+addDestEAmasks   DC.B %111000,%111000,%111000,%111111,%111111,0      
+
+ADD:
+        
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+        ;Figure out if EA is source or destination
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W  #6,D2 ;shift opmode to least sig bit of least sig byte
+        ANDI.B #%00000111,D2 ;mask out rest of byte
+        CMPI.B #2,D2 ;compare to 2
+        BLE validAddSourceEA ;2 or less is EA is source
+        
+        CMPI.B #%111,D2 ;compare to 7
+        BEQ falsePositive ;thats not valid
+        CMPI.B #%11,D2 ;compare to 3
+        BEQ falsePositive ;also not valid
+        BRA validAddDestEA ;all thats left is valid EA as Dest 
+        
+validAddSourceEA:
+        
+        LEA moveSourceEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA moveSourceEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  addSource ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validAddSourceEA ;check for next mode
+        
+        
+validAddDestEA:
+        
+        LEA addDestEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.W D1,D2 ;copy instruction to D2
+        LSR.W #6,D2  ;move mode
+        BSR switchModeAndReg ;switch register and mode
+        AND.B D5,D2  ;mask D2
+        
+        LEA addDestEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ addDest ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validAddDestEA ;check for next mode
+        
+addSource
+
+        LEA     addMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        
+        ;do EA
+        
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        BSR     Get_Effective_Address
+        
+        ;print separator
+        
+        ;Then do Dn
+        
+        MOVE.W  D1,D2
+        LSR.W   #8,D2 ;move reg into first byte
+        LSR.B   #1,D2 ;line it up to least sig bit
+        AND.B   #%00000111,D2 ;force mode to Dn
+        MOVE.B  D2,D5
+        BSR     Get_Effective_Address
+        
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+addDest
+
+        LEA     addMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        
+        ;Do Dn
+        
+        MOVE.W  D1,D2
+        LSR.W   #8,D2 ;move reg into first byte
+        LSR.B   #1,D2 ;line it up to least sig bit
+        AND.B   #%00000111,D2 ;force mode to Dn
+        MOVE.B  D2,D5
+        BSR     Get_Effective_Address
+        
+        
+        ;print separator
+        
+        ;Then do EA
+        
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        BSR     Get_Effective_Address
+        
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
 
 
 movemRegToMemEA        DC.B %010000,%100000,%111000,%111001,0
@@ -1478,6 +1615,7 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+addInstruction   EQU %1101000000000000
 movemInstruction EQU %0100100010000000
 addiInstruction  EQU %0000011000000000
 oriInstruction   EQU 0
@@ -1494,6 +1632,7 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+addMask   EQU %1111000000000000
 movemMask EQU %1111101110000000
 addiMask  EQU %1111111100000000
 oriMask   EQU %1111111100000000
@@ -1551,6 +1690,7 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+addMessage      DC.B 'ADD: ',0
 movemMessage    DC.B 'MOVEM: ',0
 addiMessage     DC.B 'ADDI: ',0
 oriMessage      DC.B 'ORI: ',0
