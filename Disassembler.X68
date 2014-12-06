@@ -241,7 +241,9 @@ addSource
         MOVE.W  D1,D2 ;check mode
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         ;print separator
         
@@ -252,8 +254,9 @@ addSource
         LSR.B   #1,D2 ;line it up to least sig bit
         AND.B   #%00000111,D2 ;force mode to Dn
         MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
-        
+        MOVEM.L (SP)+,D1
         
         LEA     clearLine,A1  ;move string for a CR and LF
         MOVE.B  #14,D0        ;set for task to display null terminated 
@@ -277,7 +280,9 @@ addDest
         LSR.B   #1,D2 ;line it up to least sig bit
         AND.B   #%00000111,D2 ;force mode to Dn
         MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         
         ;print separator
@@ -287,7 +292,9 @@ addDest
         MOVE.W  D1,D2 ;check mode
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         
         LEA     clearLine,A1  ;move string for a CR and LF
@@ -381,7 +388,9 @@ movemBody
         MOVE.W  D1,D2 ;check mode
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         
         LEA     clearLine,A1  ;move string for a CR and LF
@@ -438,7 +447,9 @@ NegBody:
         AND #%000000000111111,D2
         MOVE.B D2,D5
         
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
               
         
@@ -491,13 +502,17 @@ addiBody:
         
         ;go to Effective_Address for immediate data
         MOVE.B #%00111100,D2
-        BSR Get_Effective_Address
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         MOVE.W D1,D2 ;copy inst to D2
         AND #%000000000111111,D2 ;and out everything but modes and regs
         MOVE.B D2,D5 ; copy to D5 for following BSR
         
-        BSR Get_Effective_Address
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
               
         
@@ -550,13 +565,17 @@ oriBody:
         
         ;go to Effective_Address for immediate data
         MOVE.B #%00111100,D2
-        BSR Get_Effective_Address
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         MOVE.W D1,D2 ;copy inst to D2
         AND #%000000000111111,D2 ;and out everything but modes and regs
         MOVE.B D2,D5 ; copy to D5 for following BSR
         
-        BSR Get_Effective_Address
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
               
         
@@ -614,13 +633,17 @@ CMPIBody:
         
         ;go to Effective_Address for immediate data
         MOVE.B #%00111100,D2
-        BSR Get_Effective_Address
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         MOVE.W D1,D2 ;copy inst to D2
         AND #%000000000111111,D2 ;and out everything but modes and regs
         MOVE.B D2,D5 ; copy to D5 for following BSR
         
-        BSR Get_Effective_Address
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
               
         
@@ -673,7 +696,9 @@ JsrBody:
         AND #%000000000111111,D2 ;and out everything but modes and regs
         MOVE.B D2,D5 ; copy to D5 for following BSR
         
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
               
         
@@ -782,7 +807,9 @@ moveBody
         MOVE.W  D1,D2 ;check source mode
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         ;print separator
         
@@ -791,7 +818,9 @@ moveBody
         BSR  switchModeAndReg
         AND.B   #%00111111,D2
         MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
         
         
         
