@@ -136,9 +136,9 @@ match:
         RTS
         
 
-instOPList DC.W subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList DC.L SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+instOPList DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+instMaskList DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -159,11 +159,111 @@ snippet:
          ADD.B #10,D3
          ADDA.L #1123,A3
          SUB.W D3,D5
-         
+         SUBQ.B #8,D5
+         SUBQ.B #1,D5
 
          
 snippetEnd:
          SIMHALT
+
+subqEA        DC.B %000000,%001000,%010000,%011000,%100000,%111000,%111001,0
+subqEAmasks   DC.B %111000,%111000,%111000,%111000,%111000,%111111,%111111,0
+
+SUBQ:
+        
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+        ;check valid size field
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W  #6,D2 ;shift size to least sig bit of least sig byte
+        ANDI.B #%00000011,D2 ;mask out rest of byte
+        CMPI.B #%11,D2 ;compare to 3
+        BEQ falsePositive ;invalid size
+        
+validSubq:
+        
+        LEA subqEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA subqEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  subqBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validSubq ;check for next mode
+        
+        
+subqBody
+
+        LEA     subqMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        
+        ;immediate data
+        
+        ;print '#'
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #'#',D1 ;put ascii value of '#' in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        ;print number
+        MOVEM.L D1,-(SP)
+        MOVE.W D1,D2 ;copy inst to d2
+        LSR.W #8,D2 ;shift data section
+        LSR.B #1,D2
+        AND.B #%00000111,D2 ;mask out rest of data
+        BSR ZeroToEight ;handle zero
+        MOVEQ.L #0,D1 ;clear D1
+        MOVE.B D2,D1 ;move number to display into D1
+        MOVE.B #3,D0 ;move task 3 to D0
+        TRAP #15
+        MOVEM.L (SP)+,D1
+        
+        ;print separator
+        
+        ;Then do EA
+        
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+        
+ZeroToEight:
+        
+        CMPI.B #0,D2
+        BEQ toEight
+ZeroToEightReturn:
+        
+        RTS
+toEight:
+        
+        ADDQ.B #8,D2
+        BRA ZeroToEightReturn
+
     
 SUB:
         
@@ -1866,6 +1966,7 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+subqInstruction  EQU %0101000100000000
 subInstruction   EQU %1001000000000000
 addaInstruction  EQU %1101000000000000
 addInstruction   EQU %1101000000000000
@@ -1885,6 +1986,7 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+subqMask  EQU %1111000100000000
 subMask   EQU %1111000000000000
 addaMask  EQU %1111000000000000
 addMask   EQU %1111000000000000
@@ -1945,6 +2047,7 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+subqMessage     DC.B 'SUBQ ',0
 subMessage      DC.B 'SUB ',0 
 addaMessage     DC.B 'ADDA ',0
 addMessage      DC.B 'ADD ',0
