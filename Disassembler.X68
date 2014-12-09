@@ -136,10 +136,10 @@ match:
         RTS
         
 
-instOPList  DC.W lsrlweaInstruction,lsrlregInstruction
+instOPList  DC.W asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W lsrlweaMask,lsrlregMask,subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList DC.L LSRLWEA,LSRLREG,SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+instMaskList DC.W asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask,subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList DC.L ASRLWEA,ASRLREG,LSRLWEA,LSRLREG,SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -168,10 +168,109 @@ snippet:
          LSR D3,D7
          LSR $3563
          LSL $486412
+         ASR #3,D3
+         ASL #3,D4
+         ASL D1,D1
+         ASR D3,D7
+         ASR $3563
+         ASL $486412
 
          
 snippetEnd:
          SIMHALT
+     
+
+ASRLWEA:
+        
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+validASRL:
+        
+        LEA lsrlEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA lsrlEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  asrlweaCheckDirection ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validASRL ;check for next mode
+
+asrlweaCheckDirection:
+        ;Figure out which direction we are going
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W #8,D2 ;shift direction bit into most sig bit of first byte
+        ANDI.B #%00000001,D2 ;mask out everything but direction bit in first byte
+        CMPI.B #0,D2 ;compare bit to zero
+        BEQ ASREA ;if zero, right
+        BRA ASLEA ;else, its left
+
+ASREA:
+
+        LEA     asrMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        BRA lsrlweaBody
+        
+ASLEA:
+        
+        LEA     aslMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        BRA lsrlweaBody        
+        
+
+
+ASRLREG:
+        
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+        ;check valid size field
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W  #6,D2 ;shift size to least sig bit of least sig byte
+        ANDI.B #%00000011,D2 ;mask out rest of byte
+        CMPI.B #%11,D2 ;compare to 3
+        BEQ falsePositive ;invalid size
+
+        
+        ;Figure out which direction we are going
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W #8,D2 ;shift direction bit into most sig bit of first byte
+        ANDI.B #%00000001,D2 ;mask out everything but direction bit in first byte
+        CMPI.B #0,D2 ;compare bit to zero
+        BEQ ASRreg ;if zero, right
+        BRA ASLreg ;else, its left        
+        
+ASRreg:
+
+        LEA     asrMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        BRA LSRLregBody
+        
+ASLreg:
+        
+        LEA     aslMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        BRA LSRLregBody
 
 
 lsrlEA        DC.B %010000,%011000,%100000,%111000,%111001,0
@@ -2153,6 +2252,9 @@ spc_len         DC.B    spc_len-spc
 
 
 ***list of OP codes
+
+asrlweaInstruction  EQU %1110000011000000
+asrlregInstruction  EQU %1110000000000000
 lsrlweaInstruction  EQU %1110001011000000
 lsrlregInstruction  EQU %1110000000001000
 subqInstruction  EQU %0101000100000000
@@ -2175,6 +2277,8 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+asrlweaMask  EQU %1111111011000000
+asrlregMask  EQU %1111000000011000
 lsrlweaMask  EQU %1111111011000000
 lsrlregMask  EQU %1111000000011000
 subqMask  EQU %1111000100000000
@@ -2238,6 +2342,8 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+aslMessage      DC.B 'ASL ',0
+asrMessage      DC.B 'ASR ',0
 lslMessage      DC.B 'LSL ',0
 lsrMessage      DC.B 'LSR ',0
 subqMessage     DC.B 'SUBQ ',0
