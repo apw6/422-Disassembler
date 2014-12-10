@@ -136,10 +136,11 @@ match:
         RTS
         
 
-instOPList  DC.W mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
+instOPList  DC.W divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask,subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList DC.L MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG,SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+instMaskList DC.W divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask,subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList  DC.L DIVS
+instLabelList2 DC.L MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG,SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -181,10 +182,76 @@ snippet:
          ROR $3563
          ROL $486412
          MULS #$4562,D2
+         DIVS #$4562,D2
 
          
 snippetEnd:
          SIMHALT
+
+
+DIVS:
+
+        MOVEQ.L #0, D0 ;clear D0
+        
+validDivsModes:
+        
+        LEA mulsEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA mulsEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  divsBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validDivsModes ;check for next mode
+        
+divsBody:
+        
+
+
+        LEA     divsMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        ;do source EA
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+
+        ;print separator
+        
+        ;do dest data reg
+        MOVE.W  D1,D2 ;check mode
+        LSR.W #8,D2 ;shift reg over
+        LSR.B #1,D2
+        AND.B   #%00000111,D2 ;force recognition as a Dn
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+
 
 
 mulsEA        DC.B %000000,%010000,%011000,%100000,%111000,%111001,%111100,0
@@ -2421,6 +2488,7 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+divsInstruction  EQU %1000000111000000
 mulsInstruction  EQU %1100000111000000
 rsrlweaInstruction  EQU %1110011011000000
 rsrlregInstruction  EQU %1110000000011000
@@ -2448,6 +2516,7 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+divsMask  EQU %1111000111000000
 mulsMask  EQU %1111000111000000
 rsrlweaMask  EQU %1111111011000000
 rsrlregMask  EQU %1111000000011000
@@ -2516,6 +2585,7 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+divsMessage     DC.B 'DIVS ',0
 mulsMessage     DC.B 'MULS ',0
 rslMessage      DC.B 'ROL ',0
 rsrMessage      DC.B 'ROR ',0
