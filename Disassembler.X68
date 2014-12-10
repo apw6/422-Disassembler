@@ -136,10 +136,10 @@ match:
         RTS
         
 
-instOPList  DC.W divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
+instOPList  DC.W leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask,subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList  DC.L DIVS
+instMaskList DC.W leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask,subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList  DC.L LEA,DIVS
 instLabelList2 DC.L MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG,SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
@@ -183,10 +183,78 @@ snippet:
          ROL $486412
          MULS #$4562,D2
          DIVS #$4562,D2
+         LEA leaEAmasks,A1
 
          
 snippetEnd:
          SIMHALT
+
+leaEA        DC.B %010000,%111000,%111001,0
+leaEAmasks   DC.B %111000,%111111,%111111,0
+        
+LEA:
+
+        MOVEQ.L #0, D0 ;clear D0
+        
+validLeaModes:
+        
+        LEA leaEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA leaEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  leaBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validLeaModes ;check for next mode
+        
+leaBody:
+        
+
+
+        LEA     leaMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        ;do source EA
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+
+        ;print separator
+        
+        ;do dest addr reg
+        MOVE.W  D1,D2 ;check mode
+        LSR.W #8,D2 ;shift reg over
+        LSR.B #1,D2
+        AND.B   #%00000111,D2 ;force recognition as a An
+        ADDQ.B #%1000,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
 
 
 DIVS:
@@ -628,6 +696,13 @@ LSRLregBody:
         BSR LSRLcheckIR
         MOVEM.L (SP)+,D1
         
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of '#' in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
         MOVE.W  D1,D2 ;check mode
         AND.B   #%00000111,D2
         MOVE.B  D2,D5
@@ -662,6 +737,7 @@ LSRLcheckI:
         MOVE.B #6,D0 ;move task 6 into D0
         TRAP #15 ;prin char
         MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
         
         ;print number
         MOVEM.L D1,-(SP)
@@ -2488,6 +2564,7 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+leaInstruction   EQU %0100000111000000
 divsInstruction  EQU %1000000111000000
 mulsInstruction  EQU %1100000111000000
 rsrlweaInstruction  EQU %1110011011000000
@@ -2516,6 +2593,7 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+leaMask   EQU %1111000111000000
 divsMask  EQU %1111000111000000
 mulsMask  EQU %1111000111000000
 rsrlweaMask  EQU %1111111011000000
@@ -2585,6 +2663,7 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+leaMessage      DC.B 'LEA ',0
 divsMessage     DC.B 'DIVS ',0
 mulsMessage     DC.B 'MULS ',0
 rslMessage      DC.B 'ROL ',0
@@ -2630,6 +2709,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
