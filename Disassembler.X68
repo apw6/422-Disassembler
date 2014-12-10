@@ -2456,16 +2456,14 @@ Addr_Reg_Indirect_Dec                   ;4 = –(An) - Address Register Indirect w
 Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing Mode (000)
         
         
-        LEA         xxxW,A1             ;output 'D' for data register
-        MOVE.B      #14,D0              ;set for task to display null terminated 
-        TRAP        #15                 ;string without CR, LF
-
-        ADDA.L      #word,A3
+        ADDA.L      #word,A3 ;move past instruction
         
         ;print word (A3)
-        ;MOVE.W      A3,(A1)
-        ;MOVE.B      #1,D0               ;set for task to display null terminated 
-        ;TRAP        #15                 ;string without CR, LF
+        MOVEM.L D6/D3,-(SP)
+        MOVE.B #1,D6 ;put size of word in D6
+        MOVE.W (A3),D3 ;move data at (A3) to D3
+        BSR outputHex
+        MOVEM.L (SP)+,D6/D3
         
         ADDI.L      #word,D7 
         BRA         Get_Effective_Address_Exit  ;return
@@ -2502,6 +2500,89 @@ invalidEA:
 Get_Effective_Address_Exit:     
 
         RTS                             ;return
+
+
+***assume hex to print is in D3***
+***assume size in D6. 00 = byte, 01 = word, 10 = long
+
+hexoutputbuffer DC.L 0,0,0
+
+outputHex:
+        MOVEM.L D0/D2/D3/D6/A1/A4,-(SP)
+        LEA hexoutputbuffer,A4
+        CMPI.B #1,D6
+        BLT hexByte
+        BEQ hexWord
+        BGT hexLong
+outputHexDone:
+        MOVE.B #0,(A4)
+        
+        ;output string of hex
+        MOVE.B #14,D0
+        LEA hexoutputbuffer,A1
+        TRAP #15
+        MOVEM.L (SP)+ ,D0/D2/D3/D6/A1/A4
+        RTS
+        
+hexLong:
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        ROL.L #4,D3
+        BSR convertHexToASCII
+        
+        BRA outputHexDone
+        
+hexWord:
+        ROL.W #4,D3
+        BSR convertHexToASCII
+        ROL.W #4,D3
+        BSR convertHexToASCII
+        ROL.W #4,D3
+        BSR convertHexToASCII
+        ROL.W #4,D3
+        BSR convertHexToASCII
+
+        BRA outputHexDone
+        
+hexByte:
+        ROL.B #4,D3
+        BSR convertHexToASCII
+        ROL.B #4,D3
+        BSR convertHexToASCII
+        
+        BRA outputHexDone
+        
+convertHexToASCII:
+        MOVE.B D3,D2
+        ANDI.B #%00001111,D2 ;mask out all but hex at least significant nyb
+        CMPI.B #9,D2
+        BLE Number
+        BRA Letter       
+
+Number:
+        ADDI.B #'0',D2
+        MOVE.B D2,(A4)+
+        RTS
+        
+Letter:
+        SUBI.B #$A,D2
+        ADDI.B #'A',D2
+        MOVE.B D2,(A4)+
+        RTS
+
+
 
 switchModeAndReg:
 ***
@@ -2709,6 +2790,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
