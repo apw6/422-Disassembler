@@ -73,6 +73,20 @@ main_Loop:
         CMPA.L A3,A4 ;check end of prog
         BEQ fin
         
+        ;print memory location
+        MOVEM.L D3/D6,-(SP)
+        MOVEQ.L #2,D6 ;set as long hex string
+        MOVE.L  A3,D3 ;put hex in D3
+        BSR outputHex
+        MOVEM.L D3/D6,-(SP)
+        
+        ;print ' '
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #' ',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
         MOVE.W (A3),D1 ;copy word from other prog to analyze as instruction
         
         ;handle an odd memory access(instructions will never be misaligned)
@@ -698,7 +712,7 @@ LSRLregBody:
         
         ;print ','
         MOVEM.L D1,-(SP) ;save D1 to the stack
-        MOVE.B #',',D1 ;put ascii value of '#' in D1
+        MOVE.B #',',D1 ;put ascii value of char in D1
         MOVE.B #6,D0 ;move task 6 into D0
         TRAP #15 ;prin char
         MOVEM.L (SP)+,D1 ;pull D1 off the stack
