@@ -2483,22 +2483,35 @@ foundCC:
         
 BccByte:
         
+        MOVE.B D1,D1 ;lazy check if negative
+        
+        BMI signExtendByte
+        
+        AND.L #$000000FF,D1 ;mask out rest of reg just in case
+        
         MOVEQ.L #0,D7 ;pass back no extra data followed
         BRA     BccDone
-BccWord:
-        MOVE.W  (A3),D1
         
+signExtendByte:        
+        
+        OR.L #$FFFFFF00,D1 ;extend to long by set all bits not part of the
+                           ;least significant byte
+        
+        MOVEQ.L #0,D7 ;pass back no extra data followed
+        BRA     BccDone
+
+BccWord:
+        MOVEA.W  (A3),A1 ;sign extend word
+        MOVE.L   A1,D1
         MOVEQ.L #word,D7 ;pass back an extra word followed
         BRA     BccDone
 BccLong:
-        MOVE.L  (A3),D1
-        
+        MOVE.L  (A3),D1 
         MOVEQ.L #long,D7 ;pass back an extra long followed
         BRA     BccDone
 BccDone:
 
-        MOVE.W  #16,D2 ;put base in D2
-        MOVE.W  #15,D0  ;put task #15 in D0
+        MOVE.W  #3,D0  ;put task #15 in D0
         TRAP    #15
         
         LEA     clearLine,A1  ;move string for a CR and LF
