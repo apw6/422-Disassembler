@@ -201,6 +201,9 @@ snippet:
          LEA leaEAmasks,A1
          BCLR D1,D4
          BCLR #20,D5
+         OR.B D1,D2
+         OR.B #10,D3
+         
 
          
 snippetEnd:
@@ -247,7 +250,7 @@ validORSourceEA:
         BEQ  orSource ;if its match, its a valid mode and we can procede
         
         ADDQ.L #1,D0 ;add one to displacement
-        BRA validAddSourceEA ;check for next mode
+        BRA validOrSourceEA ;check for next mode
         
         
 validOrDestEA:
