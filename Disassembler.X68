@@ -50,7 +50,7 @@ start:
 * Debug Mode - Comment out when done
         MOVE.L      #snippet,A3
         MOVE.L      #snippetEnd,A4
-        BRA         main_Loop
+        BRA         screenLoop
 * Debug Mode - Comment out when done
 *.............................................................................        
         
@@ -60,18 +60,25 @@ prompt_user:
         CMP.W       #-1,D3              ;Did the choose to exit, or error occur?
         BEQ         fin                 ;Yes, then exit
         
-        BRA         main_Loop
+        BRA         screenLoop
         ;BSR         process_op_codes
         BRA         prompt_user
                 
 ******************************************************************************
 *                   Begin processing OP Codes
 ******************************************************************************
+screenLoop:
+            MOVE.B #30,D2
  
 main_Loop:
 
         CMPA.L A3,A4 ;check end of prog
         BLE fin
+        
+        CMPI.B #0,D2
+        BEQ checkContinue
+        SUBQ.B #1,D2
+        MOVEM.W D2,-(SP) ;save D2 for next iteration
         
         ;print memory location
         MOVEM.L D3/D6,-(SP)
@@ -105,6 +112,7 @@ main_Loop:
         ADDA.L  D7,A3 ;look past data that was part of the instruction
         
         ADDQ.L  #word,A3
+        MOVEM.W (SP)+,D2 ;restore D2 for next iteration
         BRA     main_Loop 
         
 checkOPcode:
@@ -159,6 +167,33 @@ instMaskList3 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,
 instLabelList  DC.L EOR
 instLabelList2 DC.L CMP,OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
 instLabelList3 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+
+checkContinue:
+        
+        MOVEM.W D1/D2/A1,-(SP) ;save reg that are modified just in case
+        
+        LEA     continuePrompt,A1  ;move string
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        
+        MOVE.B  #5,D0        ;set for task to read single char into D1
+        TRAP    #15
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        ;if either case of 'Q' is entered, quit the program
+        CMPI.B #'q',D1
+        BEQ fin
+        CMPI.B #'Q',D1
+        BEQ fin
+        
+        MOVEM.W (SP)+,D1/D2/A1
+        BRA screenLoop
 
 snippet:
          NOP
@@ -3378,6 +3413,8 @@ plus            DC.B '+', 0
 minus           DC.B '-', 0
 lPrn            DC.B '(', 0
 rPrn            DC.B ')', 0
+
+continuePrompt  DC.B 'Enter "Q" or "q" to quit or any other key to continue: ',0
 thankyoumessage DC.B 'Program Complete. Thank You!',0
 
 startLocation       DC.L    0
