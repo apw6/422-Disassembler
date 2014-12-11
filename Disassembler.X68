@@ -2164,6 +2164,13 @@ CMPIBody:
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
         
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
         MOVE.W D1,D2 ;copy inst to D2
         AND #%000000000111111,D2 ;and out everything but modes and regs
         MOVE.B D2,D5 ; copy to D5 for following BSR
