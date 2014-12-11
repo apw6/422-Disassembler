@@ -2509,9 +2509,12 @@ unknownOpCode:
                               ;string without CR, LF
         TRAP    #15
         
-        MOVE.B  #16,D2        ;set for displaying a base16(hex) number in D1
-        MOVE.B  #15,D0
-        TRAP    #15
+        ;print word in D1
+        MOVEM.L D6/D3,-(SP)
+        MOVE.B #1,D6 ;put size of word in D6
+        MOVE.L D1,D3 ;move data at D1 to D3
+        BSR outputHex
+        MOVEM.L (SP)+,D6/D3
         
         LEA     clearLine,A1  ;move string for a CR and LF
         MOVE.B  #14,D0        ;set for task to display null terminated 
@@ -2530,9 +2533,11 @@ handlebytedata:
         
         LSR.W   #8,D1 ;shift the word read into D1 by a byte
         
-        MOVE.B  #16,D2        ;set for displaying a base16(hex) number in D1
-        MOVE.B  #15,D0
-        TRAP    #15
+        MOVEM.L D6/D3,-(SP)
+        MOVE.B #0,D6 ;put size of byte in D6
+        MOVE.B D1,D3 ;move data at D1 to D3
+        BSR outputHex
+        MOVEM.L (SP)+,D6/D3
         
         LEA     clearLine,A1  ;move string for a CR and LF
         MOVE.B  #14,D0        ;set for task to display null terminated 
