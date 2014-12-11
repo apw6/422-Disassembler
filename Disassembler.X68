@@ -150,11 +150,11 @@ match:
         RTS
         
 
-instOPList  DC.W orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
+instOPList  DC.W cmpInstruction,orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList  DC.W orMask,bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
+instMaskList  DC.W cmpMask,orMask,bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
 instMaskList2 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList  DC.L OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
+instLabelList  DC.L CMP,OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
 instLabelList2 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
@@ -203,11 +203,96 @@ snippet:
          BCLR #20,D5
          OR.B D1,D2
          OR.B #10,D3
+         CMP.W D2,D5
+         CMP.L (A3),D4
          
 
          
 snippetEnd:
          SIMHALT
+
+
+CMP:
+        
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+        ;Figure out if EA is source or destination
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W  #6,D2 ;shift opmode to least sig bit of least sig byte
+        ANDI.B #%00000111,D2 ;mask out rest of byte
+        CMPI.B #2,D2 ;compare to 2
+        BLE validCmpEA ;2 or less is EA 
+        
+        BRA falsePositive ;thats not valid
+        
+validCmpEA:
+        
+        LEA moveSourceEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA moveSourceEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  cmpBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validCmpEA ;check for next mode
+        
+        
+        
+cmpBody
+
+        LEA     cmpMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        
+        ;do EA
+        
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        ;Then do Dn
+        
+        MOVE.W  D1,D2
+        LSR.W   #8,D2 ;move reg into first byte
+        LSR.B   #1,D2 ;line it up to least sig bit
+        AND.B   #%00000111,D2 ;force mode to Dn
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+
 
 orSourceEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,%111100,0
 orSourceEAmasks DC.B %111000,%111000,%111000,%111000,%111111,%111111,%111111,0
@@ -3048,6 +3133,7 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+cmpInstruction   EQU %1011000000000000
 orInstruction    EQU %1000000000000000
 bclrdataInstruction EQU %0000100010000000
 bclrInstruction  EQU %0000000110000000
@@ -3080,6 +3166,7 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+cmpMask   EQU %1111000000000000
 orMask    EQU %1111000000000000
 bclrdataMask EQU %1111111111000000
 bclrMask  EQU %1111000111000000
@@ -3153,6 +3240,8 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+eorMessage      DC.B 'EOR ',0
+cmpMessage      DC.B 'CMP ',0
 orMessage       DC.B 'OR ',0
 bclrMessage     DC.B 'BCLR ',0
 leaMessage      DC.B 'LEA ',0
