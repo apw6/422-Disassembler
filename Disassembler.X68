@@ -2491,9 +2491,12 @@ Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing 
         ADDA.L      #word,A3
         
         ;print long (A3)
-        ;MOVE.L      A3,(A1)
-        ;MOVE.B      #14,D0              ;set for task to display null terminated 
-        ;TRAP        #15                 ;string without CR, LF
+        MOVEM.L D6/D3,-(SP)
+        MOVE.B #2,D6 ;put size of word in D6
+        MOVE.W (A3),D3 ;move data at (A3) to D3
+        BSR outputHex
+        MOVEM.L (SP)+,D6/D3
+
         
         ADDI.L      #long,D7
         BRA         Get_Effective_Address_Exit  ;return
@@ -2804,6 +2807,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
