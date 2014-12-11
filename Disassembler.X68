@@ -9,7 +9,7 @@
 
 ***Possible Bug***
 *can not tell data from an
-*unidentified instruction from an actual
+*unidentified instruction that is an actual
 *instruction therefore causing errors.
 *may not actually be a bug because data
 *is data to the machine, and if you modify
@@ -71,14 +71,14 @@ prompt_user:
 main_Loop:
 
         CMPA.L A3,A4 ;check end of prog
-        BEQ fin
+        BLE fin
         
         ;print memory location
         MOVEM.L D3/D6,-(SP)
         MOVEQ.L #2,D6 ;set as long hex string
         MOVE.L  A3,D3 ;put hex in D3
         BSR outputHex
-        MOVEM.L D3/D6,-(SP)
+        MOVEM.L (SP)+,D3/D6
         
         ;print ' '
         MOVEM.L D1,-(SP) ;save D1 to the stack
@@ -150,11 +150,12 @@ match:
         RTS
         
 
-instOPList  DC.W leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
+instOPList  DC.W bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList DC.W leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask,subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList  DC.L LEA,DIVS
-instLabelList2 DC.L MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG,SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+instMaskList  DC.W bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
+instMaskList2 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList  DC.L BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
+instLabelList2 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
          NOP
@@ -198,10 +199,165 @@ snippet:
          MULS #$4562,D2
          DIVS #$4562,D2
          LEA leaEAmasks,A1
+         BCLR D1,D4
+         BCLR #20,D5
 
          
 snippetEnd:
          SIMHALT
+
+
+BCLRDATA:
+
+        MOVEQ.L #0, D0 ;clear D0
+        
+validBCLRdataModes:
+        
+        LEA mulsEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA mulsEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  bclrdataBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validBCLRdataModes ;check for next mode
+        
+bclrdataBody:
+        
+
+
+        LEA     bclrMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEM.L D0/D1/A3,-(SP) ;save D1 and A3
+        ADDQ.L #word,D7 ;signal there is a word following this instruction
+        
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        ;get following word
+        ADDQ.L #word,A3
+        MOVE.W (A3),D1 ;move word at (A3)
+        ANDI.L #$0000FFFF,D1 ;clear unimportant bit of D1
+        
+        ;print number
+        MOVE.B #3,D0
+        TRAP #15
+        
+        MOVEM.L (SP)+,D0/D1/A3 ;restore D1 and A3
+
+
+
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        ;do dest EA
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+
+
+         
+BCLR:
+
+        MOVEQ.L #0, D0 ;clear D0
+        
+validBCLRModes:
+        
+        LEA mulsEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA mulsEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  bclrBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validBCLRModes ;check for next mode
+        
+bclrBody:
+        
+
+
+        LEA     bclrMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        ;do source EA
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        ;do dest data reg
+        MOVE.W  D1,D2 ;check mode
+        LSR.W #8,D2 ;shift reg over
+        LSR.B #1,D2
+        AND.B   #%00000111,D2 ;force recognition as a Dn
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+         
 
 leaEA        DC.B %010000,%111000,%111001,0
 leaEAmasks   DC.B %111000,%111111,%111111,0
@@ -248,7 +404,12 @@ leaBody:
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
 
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;do dest addr reg
         MOVE.W  D1,D2 ;check mode
@@ -313,7 +474,12 @@ divsBody:
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
 
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;do dest data reg
         MOVE.W  D1,D2 ;check mode
@@ -381,7 +547,12 @@ mulsBody:
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
 
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;do dest data reg
         MOVE.W  D1,D2 ;check mode
@@ -845,7 +1016,12 @@ subqBody
         TRAP #15
         MOVEM.L (SP)+,D1
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;Then do EA
         
@@ -957,7 +1133,12 @@ subSource
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;Then do Dn
         
@@ -997,7 +1178,12 @@ subDest
         MOVEM.L (SP)+,D1
         
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;Then do EA
         
@@ -1072,7 +1258,12 @@ addaBody
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;Then do Dn
         
@@ -1179,7 +1370,12 @@ addSource
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;Then do Dn
         
@@ -1219,7 +1415,12 @@ addDest
         MOVEM.L (SP)+,D1
         
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         ;Then do EA
         
@@ -1317,7 +1518,12 @@ movemBody
         ADDQ.L #word,D7 ;read past the register list mask(word) following
                         ;the instruction
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         MOVE.W  D1,D2 ;check mode
         AND.B   #%00111111,D2
@@ -1502,6 +1708,13 @@ oriBody:
         MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
+        
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         MOVE.W D1,D2 ;copy inst to D2
         AND #%000000000111111,D2 ;and out everything but modes and regs
@@ -1745,7 +1958,12 @@ moveBody
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
         
-        ;print separator
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         MOVE.W  D1,D2 ;check dest mode
         LSR.W   #6,D2
@@ -2662,6 +2880,8 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+bclrdataInstruction EQU %0000100010000000
+bclrInstruction  EQU %0000000110000000
 leaInstruction   EQU %0100000111000000
 divsInstruction  EQU %1000000111000000
 mulsInstruction  EQU %1100000111000000
@@ -2691,6 +2911,8 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+bclrdataMask EQU %1111111111000000
+bclrMask  EQU %0000000110000000
 leaMask   EQU %1111000111000000
 divsMask  EQU %1111000111000000
 mulsMask  EQU %1111000111000000
@@ -2761,6 +2983,7 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+bclrMessage     DC.B 'BCLR ',0
 leaMessage      DC.B 'LEA ',0
 divsMessage     DC.B 'DIVS ',0
 mulsMessage     DC.B 'MULS ',0
