@@ -150,11 +150,11 @@ match:
         RTS
         
 
-instOPList  DC.W bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
+instOPList  DC.W bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList  DC.W bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
+instMaskList  DC.W bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
 instMaskList2 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList  DC.L BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
+instLabelList  DC.L BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
 instLabelList2 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
 snippet:
@@ -244,9 +244,9 @@ bclrdataBody:
         MOVEM.L D0/D1/A3,-(SP) ;save D1 and A3
         ADDQ.L #word,D7 ;signal there is a word following this instruction
         
-        ;print ','
+        ;print '#'
         MOVEM.L D1,-(SP) ;save D1 to the stack
-        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #'#',D1 ;put ascii value of char in D1
         MOVE.B #6,D0 ;move task 6 into D0
         TRAP #15 ;prin char
         MOVEM.L (SP)+,D1 ;pull D1 off the stack
@@ -2912,7 +2912,7 @@ dataInstruction  EQU 0
 ***list of OP masks
 
 bclrdataMask EQU %1111111111000000
-bclrMask  EQU %0000000110000000
+bclrMask  EQU %111100111000000
 leaMask   EQU %1111000111000000
 divsMask  EQU %1111000111000000
 mulsMask  EQU %1111000111000000
@@ -3030,6 +3030,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
