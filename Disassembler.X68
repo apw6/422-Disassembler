@@ -9,7 +9,7 @@
 
 ***Possible Bug***
 *can not tell data from an
-*unidentified instruction from an actual
+*unidentified instruction that is an actual
 *instruction therefore causing errors.
 *may not actually be a bug because data
 *is data to the machine, and if you modify
@@ -78,7 +78,7 @@ main_Loop:
         MOVEQ.L #2,D6 ;set as long hex string
         MOVE.L  A3,D3 ;put hex in D3
         BSR outputHex
-        MOVEM.L D3/D6,-(SP)
+        MOVEM.L (SP)+,D3/D6
         
         ;print ' '
         MOVEM.L D1,-(SP) ;save D1 to the stack
@@ -198,6 +198,8 @@ snippet:
          MULS #$4562,D2
          DIVS #$4562,D2
          LEA leaEAmasks,A1
+         BCLR D1,D4
+         BCLR #20,D5
 
          
 snippetEnd:
