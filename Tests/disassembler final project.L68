@@ -1,6 +1,6 @@
-00000000 Starting Address
+00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.15.02
-Created On: 12/1/2014 12:52:47 PM
+Created On: 12/10/2014 4:42:04 PM
 
 00000000                             1  
 00000000                             2  *-----------------------------------------------------------
@@ -622,7 +622,7 @@ Created On: 12/1/2014 12:52:47 PM
 000013F0                           618  *~Font size~12~
 000013F0                           619  *~Tab type~1~
 000013F0                           620  
-000013F0                           621  
+000013F0                           621             
 Line 622 WARNING: END directive missing, starting address not set
 
 No errors detected

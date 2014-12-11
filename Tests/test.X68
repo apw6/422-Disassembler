@@ -206,14 +206,6 @@ TESTBNE
 *--------DIVS-------
 
 
-    DIVS.W  D0,D1
-    DIVS.W  #1112,D2
-    DIVS.W  (A1),D1
-    DIVS.W  (A2)+,D2
-    DIVS.W  -(A3),D3
-    DIVS.W  $AA12,D4
-    DIVS.W  $1200,D5
-
 *-------MULU--------
 
 
@@ -901,6 +893,7 @@ TESTBNE
 * Put variables and constants here
 
     END    START        ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~10~

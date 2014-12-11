@@ -1,6 +1,6 @@
-00001000 Starting Address
+00005000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.15.02
-Created On: 11/26/2014 10:50:02 AM
+Created On: 12/10/2014 4:33:43 PM
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  * Title      :
@@ -8,76 +8,72 @@ Created On: 11/26/2014 10:50:02 AM
 00000000                             4  * Date       :
 00000000                             5  * Description: DIVS, MUL, BSTS, ASL/ASR test
 00000000                             6  *-----------------------------------------------------------
-00001000                             7      ORG    $1000
-00001000                             8  START:                  ; first instruction of program
-00001000                             9  
-00001000                            10  * Put program code here
-00001000                            11  **  DIVS
-00001000                            12  
-00001000                            13  
-Line 14 ERROR: Invalid size code
-00001000  83C0                      14      DIVS.B  D0,D1
-00001002  85FC 0458                 15      DIVS.W  #1112,D2
-00001006  83D1                      16      DIVS.W  (A1),D1
-00001008  85DA                      17      DIVS.W  (A2)+,D2
-0000100A  87E3                      18      DIVS.W  -(A3),D3
-0000100C  89F9 0000AA12             19      DIVS.W  $AA12,D4
-00001012  8BF8 1200                 20      DIVS.W  $1200,D5
-00001016                            21  
-00001016                            22  *-------MULU--------
-00001016                            23  
-00001016                            24  
-00001016                            25  
-Line 26 ERROR: Invalid size code
-00001016  CAC2                      26      MULU.B  D2,D5       ;same data as DIVS test
-00001018  C2C0                      27      MULU.W  D0,D1
-0000101A  C4FC 0458                 28      MULU.W  #1112,D2
-0000101E  C2D1                      29      MULU.W  (A1),D1
-00001020  C4DA                      30      MULU.W  (A2)+,D2
-00001022  C6E3                      31      MULU.W  -(A3),D3
-00001024  C8F9 0000AA12             32      MULU.W  $AA12,D4
-0000102A  CAF8 1200                 33      MULU.W  $1200,D5
-0000102E                            34   
-0000102E                            35      
-0000102E                            36  
-0000102E                            37  
-0000102E                            38  *--------ASR--------
-0000102E                            39  
-0000102E  E802                      40      ASR.B  #4,D2   
-00001030  E262                      41      ASR  D1,D2
-00001032                            42     
-00001032  EA45                      43      ASR.W  #5,D5
-00001034  E865                      44      ASR  D4,D5
-00001036                            45     
-00001036  EC81                      46      ASR.L  #6,D1
-00001038  EEA1                      47      ASR.L  D7,D1
-0000103A                            48     
-0000103A                            49      
-0000103A                            50  *-------ASL---------
-0000103A                            51  
-0000103A  E301                      52      ASL.B  #1,D1
-0000103C  E121                      53      ASL.B  D0,D1
-0000103E                            54      
-0000103E  E545                      55      ASL.W  #2,D5
-00001040  E765                      56      ASL  D3,D5
-00001042                            57      
-00001042  E782                      58      ASL.L  #3,D2
-00001044  EDA2                      59      ASL.L  D6,D2
-00001046                            60     
-00001046                            61      
-00001046                            62      
-00001046                            63  
-00001046  FFFF FFFF                 64      SIMHALT             ; halt simulator
-0000104A                            65  
-0000104A                            66  * Put variables and constants here
-0000104A                            67  
-0000104A                            68      END    START        ; last line of source
+00005000                             7      ORG    $5000
+00005000                             8  START:                  ; first instruction of program
+00005000                             9  
+00005000                            10  * Put program code here
+00005000                            11  *--------DIVS-------
+00005000                            12  
+00005000                            13  
+00005000  83C0                      14      DIVS.W  D0,D1
+00005002                            15      ;DIVS.W  (A2),D2
+00005002                            16      ;DIVS.W  (A3),D3
+00005002                            17      ;DIVS.W  $AA12,D4
+00005002                            18     
+00005002                            19  
+00005002                            20  *-------MULU--------
+00005002                            21  
+00005002                            22  
+00005002                            23  
+00005002  CAC2                      24      MULU.W  D2,D5       ;same data as DIVS test
+00005004  C2C0                      25      MULU.W  D0,D1
+00005006  C4FC 13F8                 26      MULU.W  #5112,D2
+0000500A  C2D1                      27      MULU.W  (A1),D1
+0000500C  C4DA                      28      MULU.W  (A2)+,D2
+0000500E  C6E3                      29      MULU.W  -(A3),D3
+00005010  C8F9 0000AA12             30      MULU.W  $AA12,D4
+00005016  CAF8 1200                 31      MULU.W  $1200,D5
+0000501A                            32   
+0000501A                            33      
+0000501A                            34  
+0000501A                            35  
+0000501A                            36  *--------ASR--------
+0000501A                            37  
+0000501A  E802                      38      ASR.B  #4,D2   
+0000501C  E262                      39      ASR  D1,D2
+0000501E                            40     
+0000501E  EA45                      41      ASR.W  #5,D5
+00005020  E865                      42      ASR  D4,D5
+00005022                            43     
+00005022  EC81                      44      ASR.L  #6,D1
+00005024  EEA1                      45      ASR.L  D7,D1
+00005026                            46     
+00005026                            47      
+00005026                            48  *-------ASL---------
+00005026                            49  
+00005026  E301                      50      ASL.B  #1,D1
+00005028  E121                      51      ASL.B  D0,D1
+0000502A                            52      
+0000502A  E545                      53      ASL.W  #2,D5
+0000502C  E765                      54      ASL  D3,D5
+0000502E                            55      
+0000502E  E782                      56      ASL.L  #3,D2
+00005030  EDA2                      57      ASL.L  D6,D2
+00005032                            58     
+00005032                            59      
+00005032                            60      
+00005032                            61  
+00005032  FFFF FFFF                 62      SIMHALT             ; halt simulator
+00005036                            63  
+00005036                            64  * Put variables and constants here
+00005036                            65  
+00005036                            66      END    START        ; last line of source
 
-2 errors detected
+No errors detected
 No warnings generated
 
 
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-START               1000
+START               5000
