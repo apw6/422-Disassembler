@@ -2038,8 +2038,11 @@ addiBody:
                               ;string without CR, LF
         TRAP    #15
         
+        BSR NegSize
+        
         ;go to Effective_Address for immediate data
-        MOVE.B #%00111100,D2
+        MOVE.L #%00111100,D2
+        MOVE.L D2,D5
         MOVEM.L D1,-(SP)
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
@@ -3540,7 +3543,7 @@ subMessage      DC.B 'SUB ',0
 addaMessage     DC.B 'ADDA ',0
 addMessage      DC.B 'ADD ',0
 movemMessage    DC.B 'MOVEM ',0
-addiMessage     DC.B 'ADDI ',0
+addiMessage     DC.B 'ADDI',0
 oriMessage      DC.B 'ORI ',0
 cmpiMessage     DC.B 'CMPI ',0
 jsrMessage      DC.B 'JSR ',0
