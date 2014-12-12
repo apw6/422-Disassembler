@@ -50,6 +50,9 @@ start:
 * Debug Mode - Comment out when done
         MOVE.L      #snippet,A3
         MOVE.L      #snippetEnd,A4
+
+        ;MOVE.L      #begin,A3
+        ;MOVE.L      #end,A4
         BRA         screenLoop
 * Debug Mode - Comment out when done
 *.............................................................................        
@@ -67,7 +70,9 @@ prompt_user:
 ******************************************************************************
 *                   Begin processing OP Codes
 ******************************************************************************
+
 screenLoop:
+
             MOVE.B #30,D2
  
 main_Loop:
@@ -3110,9 +3115,9 @@ Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing
                        
 Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing Mode (001)
         
-        LEA         xxxL,A1             ;output 'D' for data register
-        MOVE.B      #14,D0              ;set for task to display null terminated 
-        TRAP        #15                 ;string without CR, LF
+        ;LEA         xxxL,A1             ;output 'D' for data register
+        ;MOVE.B      #14,D0              ;set for task to display null terminated 
+        ;TRAP        #15                 ;string without CR, LF
 
         ADDA.L      #word,A3
         
@@ -3449,6 +3454,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
