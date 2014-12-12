@@ -100,11 +100,7 @@ main_Loop:
         TRAP #15 ;prin char
         MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
-<<<<<<< HEAD
-        MOVE.W (A3),D1 ;copy word from other prog to analyze as instruction
-=======
         
->>>>>>> origin/master
         
         ;handle an odd memory access(instructions will never be misaligned)
         MOVE.L A3,D2 ; copy address to D2
@@ -115,7 +111,7 @@ main_Loop:
         
         MOVEQ.L #0,D3
         
-        MOVE.W (A3),D1                  ;copy word from other prog to analyze as instruction
+        MOVE.W (A3),D1 ;copy word from other prog to analyze as instructioninstruction
         
         ***things to save A3,A4,D1(?)***
         MOVEM.L A3-A4,-(SP)
@@ -3533,6 +3529,7 @@ endLocation         DC.L    0
 
    
     END    START        ; last line of source
+
 *~Font name~Courier New~
 *~Font size~12~
 *~Tab type~1~
