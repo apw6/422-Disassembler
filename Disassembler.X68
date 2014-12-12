@@ -1,11 +1,11 @@
-*##########################################################################
+*##################################################################################################
 * Title      : 
 * Written by : Andrew Watson
 *            : Elaine Keller
 *            : Robert Anderson
 * Date       : 11/14/2014
 * Description: 
-*##########################################################################
+*##################################################################################################
 
 ***Possible Bug***
 *can not tell data from an
@@ -18,9 +18,9 @@
 *executed.
 
 
-***************************************************************************
-*                   Variable/Data Definitions
-***************************************************************************
+***************************************************************************************************
+*                                      Variable/Data Definitions
+***************************************************************************************************
 
 stack   EQU   $00005000
 begin   EQU   $00005001
@@ -30,29 +30,31 @@ word    EQU   2
 long    EQU   4
 prgorg  EQU   $1000
 
-    ORG $00000FFE
+        ORG $00000FFE
+        
 FarLabel:
-    ORG    prgorg
+
+        ORG    prgorg
 start:
         LEA stack, SP ;initialize stack
 
-    ORG    prgorg
+        ORG    prgorg
 
-******************************************************************************
-*                   Begin processing active code
-******************************************************************************
+***************************************************************************************************
+*                                    Begin processing active code
+***************************************************************************************************
     
 start:
 
         LEA         stack, SP           ;Initialize stack
         
-*.............................................................................
+*..................................................................................................
 * Debug Mode - Comment out when done
-        MOVE.L      #snippet,A3
-        MOVE.L      #snippetEnd,A4
-        BRA         main_Loop
+*        MOVE.L      #snippet,A3
+*        MOVE.L      #snippetEnd,A4
+*        BRA         main_Loop
 * Debug Mode - Comment out when done
-*.............................................................................        
+*..................................................................................................        
         
 prompt_user:
 
@@ -64,92 +66,89 @@ prompt_user:
         ;BSR         process_op_codes
         BRA         prompt_user
                 
-******************************************************************************
-*                   Begin processing OP Codes
-******************************************************************************
+***************************************************************************************************
+*                                     Begin processing OP Codes
+***************************************************************************************************
  
 main_Loop:
 
-        CMPA.L A3,A4 ;check end of prog
+        CMPA.L      A3,A4               ;check end of prog
         BLE fin
         
         ;print memory location
-        MOVEM.L D3/D6,-(SP)
-        MOVEQ.L #2,D6 ;set as long hex string
-        MOVE.L  A3,D3 ;put hex in D3
-        BSR outputHex
-        MOVEM.L (SP)+,D3/D6
+        MOVEM.L     D3/D6,-(SP)
+        MOVEQ.L     #2,D6               ;set as long hex string
+        MOVE.L      A3,D3               ;put hex in D3
+        BSR         outputHex
+        MOVEM.L     (SP)+,D3/D6
         
         ;print ' '
-        MOVEM.L D1,-(SP) ;save D1 to the stack
-        MOVE.B #' ',D1 ;put ascii value of char in D1
-        MOVE.B #6,D0 ;move task 6 into D0
-        TRAP #15 ;prin char
-        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #' ',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
-        MOVE.W (A3),D1 ;copy word from other prog to analyze as instruction
+        MOVE.W      (A3),D1             ;copy word from other prog to analyze as instruction
         
         ;handle an odd memory access(instructions will never be misaligned)
-        MOVE.L A3,D2 ; copy address to D2
-        ANDI.B #%00000001,D2 ;mask everything except the least significant bit
-        CMPI.B #1,D2 ;compare the least sig bit of the address to one
-        BEQ handlebytedata ;the least sig bit will only be one if the insrtuction
-                           ;is odd(misaligned) and therefore not an instruction
+        MOVE.L      A3,D2               ;copy address to D2
+        ANDI.B      #%00000001,D2       ;mask everything except the least significant bit
+        CMPI.B      #1,D2               ;compare the least sig bit of the address to one
+        BEQ         handlebytedata      ;the least sig bit will only be one if the insrtuction
+                                        ;is odd(misaligned) and therefore not an instruction
         
         MOVEQ.L #0,D3
         
-        ***things to save A3,A4,D1(?)***
-        MOVEM.L A3-A4,-(SP)
-        BSR checkOPcode
-        MOVEM.L (SP)+,A3-A4
-        ADDA.L  D7,A3 ;look past data that was part of the instruction
+        ***things to save A3,A4,D1***
+        MOVEM.L     A3-A4,-(SP)
+        BSR         checkOPcode
+        MOVEM.L     (SP)+,A3-A4
+        ADDA.L      D7,A3               ;look past data that was part of the instruction
         
-        ADDQ.L  #word,A3
-        BRA     main_Loop 
+        ADDQ.L      #word,A3
+        BRA         main_Loop 
         
 checkOPcode:
 
 
-        MOVEQ.L #0,D7
+        MOVEQ.L     #0,D7
         
-        LEA     instOPList,A0 ;get instruction signitrue list in A0
-        ADDA.L  D3,A0 ;get correct sig         
+        LEA         instOPList,A0       ;get instruction signitrue list in A0
+        ADDA.L      D3,A0               ;get correct sig         
         
-        LEA     instMaskList,A1 ;get instruction mask in A1
-        ADDA.L  D3,A1  ;get correct mast
+        LEA         instMaskList,A1     ;get instruction mask in A1
+        ADDA.L      D3,A1               ;get correct mast
         
-        MOVE.W  D1,D2 ;move instruction into D2 for manipulaiton
+        MOVE.W      D1,D2               ;move instruction into D2 for manipulaiton
         
-        AND.W   (A1),D2 ;mask instruction
-        
-        
-        
-        
-        CMP.W   (A0),D2 ;compare to sig
-        BEQ     match ;if sig matches branch
-        ADDQ.L  #word,D3 ;add to D3 to check for next instruction
-        BRA checkOPcode
+        AND.W       (A1),D2             ;mask instruction
+           
+        CMP.W       (A0),D2             ;compare to sig
+        BEQ         match               ;if sig matches branch
+        ADDQ.L      #word,D3            ;add to D3 to check for next instruction
+        BRA         checkOPcode
         
 falsePositive:
         
-        MOVE.B #-1,D0
+        MOVE.B      #-1,D0
         RTS
 
 match:
         
-        LEA     instLabelList,A1 ;get instruction code label
-        ADDA.L  D3,A1 ;get correct label
-        ADDA.L  D3,A1
-        ADDQ.L  #word,D3 ;add to D3 incase false positive
-        MOVEA.L (A1),A1
-        MOVEM.L D3,-(SP) ; save D3
-        JSR     (A1)
-        MOVEM.L (SP)+,D3 ;restore D3
-        CMP.B   #-1,D0
-        BEQ     checkOPcode
+        LEA         instLabelList,A1    ;get instruction code label
+        ADDA.L      D3,A1               ;get correct label
+        ADDA.L      D3,A1
+        ADDQ.L      #word,D3            ;add to D3 incase false positive
+        MOVEA.L     (A1),A1
+        MOVEM.L     D3,-(SP)            ; save D3
+        JSR         (A1)
+        MOVEM.L     (SP)+,D3            ;restore D3
+        CMP.B       #-1,D0
+        BEQ         checkOPcode
         RTS
         
-
+* Load list for instructions
 instOPList  DC.W orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
 instMaskList  DC.W orMask,bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
@@ -213,65 +212,65 @@ OR:
         
 
         
-        MOVEQ.L #0, D0 ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
         ;Figure out if EA is source or destination
-        MOVE.W D1,D2 ;copy inst to D2
-        LSR.W  #6,D2 ;shift opmode to least sig bit of least sig byte
-        ANDI.B #%00000111,D2 ;mask out rest of byte
-        CMPI.B #2,D2 ;compare to 2
-        BLE validOrSourceEA ;2 or less is EA is source
+        MOVE.W      D1,D2               ;copy inst to D2
+        LSR.W       #6,D2               ;shift opmode to least sig bit of least sig byte
+        ANDI.B      #%00000111,D2       ;mask out rest of byte
+        CMPI.B      #2,D2               ;compare to 2
+        BLE         validOrSourceEA     ;2 or less is EA is source
         
-        CMPI.B #%111,D2 ;compare to 7
-        BEQ falsePositive ;thats not valid
-        CMPI.B #%11,D2 ;compare to 3
-        BEQ falsePositive ;also not valid
-        BRA validOrDestEA ;all thats left is valid EA as Dest 
+        CMPI.B      #%111,D2            ;compare to 7
+        BEQ         falsePositive       ;thats not valid
+        CMPI.B      #%11,D2             ;compare to 3
+        BEQ         falsePositive       ;also not valid
+        BRA         validOrDestEA       ;all thats left is valid EA as Dest 
         
 validORSourceEA:
         
-        LEA orSourceEAmasks,A1 ;load the list of masks
-        ADDA.L D0,A1 ;displace to a specific mask
-        MOVE.B (A1),D5 ;move the mask to D5
+        LEA         orSourceEAmasks,A1  ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5 ;check if the mask is 0
-        BEQ falsePositive ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2 ;copy instruction to D2
-        AND.B D5,D2  ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA orSourceEA,A1 ;load the list of valid modes
-        ADDA.L D0,A1 ;displace to a specific mode
-        MOVE.B (A1),D4 ;move mode to D4
-        CMP.B D4,D2 ;compare mode to masked value
-        BEQ  orSource ;if its match, its a valid mode and we can procede
+        LEA         orSourceEA,A1       ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         orSource            ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0 ;add one to displacement
-        BRA validAddSourceEA ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validAddSourceEA    ;check for next mode
         
         
 validOrDestEA:
         
-        LEA addDestEAmasks,A1 ;load the list of masks
-        ADDA.L D0,A1 ;displace to a specific mask
-        MOVE.B (A1),D5 ;move the mask to D5
+        LEA         addDestEAmasks,A1   ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5 ;check if the mask is 0
-        BEQ falsePositive ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.W D1,D2 ;copy instruction to D2
-        LSR.W #6,D2  ;move mode
-        BSR switchModeAndReg ;switch register and mode
-        AND.B D5,D2  ;mask D2
+        MOVE.W      D1,D2               ;copy instruction to D2
+        LSR.W       #6,D2               ;move mode
+        BSR         switchModeAndReg    ;switch register and mode
+        AND.B       D5,D2               ;mask D2
         
-        LEA addDestEA,A1 ;load the list of valid modes
-        ADDA.L D0,A1 ;displace to a specific mode
-        MOVE.B (A1),D4 ;move mode to D4
-        CMP.B D4,D2 ;compare mode to masked value
-        BEQ orDest ;if its match, its a valid mode and we can procede
+        LEA         addDestEA,A1 ;load the list of valid modes
+        ADDA.L      D0,A1 ;displace to a specific mode
+        MOVE.B      (A1),D4 ;move mode to D4
+        CMP.B       D4,D2 ;compare mode to masked value
+        BEQ         orDest ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0 ;add one to displacement
-        BRA validOrDestEA ;check for next mode
+        ADDQ.L      #1,D0 ;add one to displacement
+        BRA         validOrDestEA ;check for next mode
         
 orSource
 
@@ -3198,6 +3197,8 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
+
 
 
 
