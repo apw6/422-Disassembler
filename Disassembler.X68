@@ -210,6 +210,7 @@ snippet:
          CMPI #3,D1
          ORI  #3,D1
          MOVEM.L A3-A4,-(SP)
+         MOVEM.L (SP)+,D1-A3
          ADD.B D1,D2
          ADD.B #10,D3
          ADDA.L #1123,A3
@@ -1820,6 +1821,7 @@ movemRegToMemEAmasks   DC.B %111000,%111000,%111111,%111111,0
 movemMemToRegEA        DC.B %010000,%011000,%111000,%111001,0
 movemMemToRegEAmasks   DC.B %111000,%111000,%111111,%111111,0        
 
+
 MOVEM:
         
 
@@ -1850,7 +1852,7 @@ validRegToMem:
         ADDA.L D0,A1 ;displace to a specific mode
         MOVE.B (A1),D4 ;move mode to D4
         CMP.B D4,D2 ;compare mode to masked value
-        BEQ  movemBody ;if its match, its a valid mode and we can procede
+        BEQ  movemPre ;if its match, its a valid mode and we can procede
         
         ADDQ.L #1,D0 ;add one to displacement
         BRA validRegToMem ;check for next mode
@@ -1866,27 +1868,28 @@ validMemToReg:
         BEQ falsePositive ;branch if it is
         
         MOVE.W D1,D2 ;copy instruction to D2
-        LSR.W #6,D2  ;move mode
-        BSR switchModeAndReg ;switch register and mode
         AND.B D5,D2  ;mask D2
         
         LEA movemMemToRegEA,A1 ;load the list of valid modes
         ADDA.L D0,A1 ;displace to a specific mode
         MOVE.B (A1),D4 ;move mode to D4
         CMP.B D4,D2 ;compare mode to masked value
-        BEQ movemBody ;if its match, its a valid mode and we can procede
+        BEQ movemPost ;if its match, its a valid mode and we can procede
         
         ADDQ.L #1,D0 ;add one to displacement
-        BRA validMoveDestModes ;check for next mode
-        
-movemBody
+        BRA validMemToReg ;check for next mode
+
+movemPre:
 
         LEA     movemMessage,A1  ;move string for MOVE
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
         
+
+        
         ;show list
+        BSR outputPreIncrement        
         
         ADDQ.L #word,D7 ;read past the register list mask(word) following
                         ;the instruction
@@ -1913,6 +1916,196 @@ movemBody
 
         MOVEQ.L #0,D0
         RTS
+
+        
+movemPost:
+
+        LEA     movemMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        
+
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+
+        
+        ;show list
+        BSR outputPostIncrement        
+        
+        ADDQ.L #word,D7 ;read past the register list mask(word) following
+                        ;the instruction
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+movemRegListBuffer DC.L 0,0,0,0,0,0,0,0,0,0,0,0 
+                          ;max of 16 regs @ 2 bytes each, 
+                          ;15 possible '/' @ a byte
+                          ;byte for null terminator
+                          ; 48 bytes = 12 longs
+                          
+movemPostRegList DC.B 'A7','A6','A5','A4','A3','A2','A1','A0','D7','D6','D5','D4','D3','D2','D1','D0'
+movemPreRegList ;should be location after PostList
+        
+outputPreincrement:
+        ADDQ.L #word,A3
+        MOVE.W (A3),D2
+        MOVEQ.L #0,D3
+        LEA movemRegListBuffer,A3
+        LEA movemPreRegList,A4
+        
+        SUBQ.L #word,A4
+        
+        BSR checkPreRegAdd ;1
+        
+        SUBQ.L #word,A4
+        
+        BSR checkPreRegAdd ;2
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;3
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;4
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;5
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;6
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;7
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;8
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;9
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;10
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;11
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;12
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;13
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;14
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;15
+        SUBQ.L #word,A4
+        BSR checkPreRegAdd ;16
+        
+        MOVE.B #0,(A3)
+        LEA     movemRegListBuffer,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15 
+        
+        RTS
+        
+checkPostRegAdd:
+        ASL.W #1,D2
+        BCS PostRegAdd
+addPostRegDone:
+        RTS
+        
+PostRegAdd:
+        LEA movemRegListBuffer,A5
+        CMP.L A3,A5
+        BNE postAddBackslash
+PostRegAddDone:
+        MOVE.B (A4)+,(A3)+
+        MOVE.B (A4),(A3)+
+        SUBQ.L #byte,A4
+        BRA addPostRegDone
+        
+postAddBackslash:
+        MOVE.B #'/',(A3)+
+        BRA PostRegAddDone
+        
+
+outputPostincrement:
+        ADDQ.L #word,A3
+        MOVE.W (A3),D2
+        MOVEQ.L #0,D3
+        LEA movemRegListBuffer,A3
+        LEA movemPostRegList,A4
+        
+        BSR checkPostRegAdd ;1
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;2
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;3
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;4
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;5
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;6
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;7
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;8
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;9
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;10
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;11
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;12
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;13
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;14
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;15
+        ADDQ.L #word,A4
+        BSR checkPostRegAdd ;16
+        
+        MOVE.B #0,(A3)
+        LEA     movemRegListBuffer,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15 
+        
+        RTS
+        
+checkPreRegAdd:
+        ASL.W #1,D2
+        BCS PreRegAdd
+addPreRegDone:
+        RTS
+        
+PreRegAdd:
+        LEA movemRegListBuffer,A5
+        CMP.L A3,A5
+        BNE preAddBackslash
+PreRegAddDone:
+        MOVE.B (A4)+,(A3)+
+        MOVE.B (A4),(A3)+
+        SUBQ.L #byte,A4
+        BRA addPreRegDone
+        
+preAddBackslash:
+        MOVE.B #'/',(A3)+
+        BRA PostRegAddDone
+
+
 
 
     
@@ -3449,6 +3642,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
