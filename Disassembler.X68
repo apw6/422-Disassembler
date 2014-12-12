@@ -202,36 +202,37 @@ snippet:
          BEQ snippet
          BGT NEG
          BSR snippet
-         NEG D1
-         MOVE.W $8500,D1
-         ADDI.W #30,D5
+         NEG.B D1
+         NEG.W D2
+         MOVE.B #$85,D1
+         ADDI.L #30,D5
          RTS
          JSR $54
-         CMPI #3,D1
-         ORI  #3,D1
+         CMPI.W #3,D1
+         ORI.L  #3,D1
          MOVEM.L A3-A4,-(SP)
          MOVEM.L (SP)+,D1-A3
          ADD.B D1,D2
          ADD.B #10,D3
-         ADDA.L #1123,A3
+         ADDA.W #23,A3
          SUB.W D3,D5
          SUBQ.B #8,D5
          SUBQ.B #1,D5
-         LSR #3,D3
-         LSL #3,D4
-         LSL D1,D1
-         LSR D3,D7
+         LSR.B #3,D3
+         LSL.L #3,D4
+         LSL.W D1,D1
+         LSR.B D3,D7
          LSR $3563
          LSL $486412
-         ASR #3,D3
-         ASL #3,D4
-         ASL D1,D1
-         ASR D3,D7
-         ASR $3563
-         ASL $486412
-         ROR #3,D3
-         ROL #3,D4
-         ROL D1,D1
+         ASR.W #3,D3
+         ASL.L #3,D4
+         ASL.L D1,D1
+         ASR.B D3,D7
+         ASR.W $3563
+         ASL.W $486412
+         ROR.L #3,D3
+         ROL.W #3,D4
+         ROL.B D1,D1
          ROR D3,D7
          ROR $3563
          ROL $486412
@@ -2149,6 +2150,8 @@ NegBody:
                               ;string without CR, LF
         TRAP    #15
         
+        BSR NegSize
+        
         MOVE.W D1,D2
         AND #%000000000111111,D2
         MOVE.B D2,D5
@@ -2167,6 +2170,18 @@ NEGdone:
         TRAP    #15
         MOVEQ.L #0,D0
         RTS
+        
+NegSize:
+        MOVE.W  D1,D2 ;copy inst to D2
+        LSR.W #6,D2 ;shift size over to first byte
+        AND.L  #%11,D2 ;mask word for size
+        MOVE.L D2,D6 ;size does not need to be translated,
+                     ;so moved directly to D6
+        
+        BSR printSize
+        
+        RTS
+        
         
  ADDI:            
      
@@ -2635,7 +2650,8 @@ moveABody:
 
            
 Bcc:
-
+        
+        MOVEM.L D1,-(SP)
         LEA     bccMessage,A1  ;move string for BRA info
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string without CR, LF
@@ -2711,7 +2727,8 @@ BccDone:
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string without CR, LF
         TRAP    #15
-
+        
+        MOVEM.L (SP)+,D1
         MOVEQ.L #0,D0
         RTS
         
@@ -3337,6 +3354,59 @@ Get_Effective_Address_Exit:
 
         RTS                             ;return
 
+***assume size in D6. 00 = byte, 01 = word, 10 = long
+printSize:
+        MOVEM.L D0/D1,-(SP)
+        
+        ;print '.'
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #'.',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;print char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        CMPI.B #1,D6
+        BLT printByteSize
+        BEQ printWordSize
+        BGT printLongSize
+printSizeDone:
+        ;print ' '
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #' ',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;print char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        MOVEM.L (SP)+,D0/D1
+        RTS
+        
+printByteSize:
+        ;print 'B'
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #'B',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;print char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        BRA printSizeDone
+        
+printWordSize:
+        ;print 'W'
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #'W',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;print char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        BRA printSizeDone
+
+printLongSize:
+        ;print 'L'
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #'L',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;print char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        BRA printSizeDone       
+        
 
 ***assume hex to print is in D3***
 ***assume size in D6. 00 = byte, 01 = word, 10 = long
@@ -3616,7 +3686,7 @@ rtsMessage      DC.B 'RTS ',0
 nopMessage      DC.B 'NOP ',0 
 moveMessage     DC.B 'MOVE ',0
 bccMessage      DC.B 'B',0
-negMessage      DC.B 'NEG ',0
+negMessage      DC.B 'NEG',0
 dataMessage     DC.B 'DATA ',0
 moveaMessage    DC.B 'MOVEA ',0
 
@@ -3641,6 +3711,7 @@ endLocation         DC.L    0
 
    
     END    START        ; last line of source
+
 *~Font name~Courier New~
 *~Font size~12~
 *~Tab type~1~
