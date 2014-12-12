@@ -226,7 +226,7 @@ snippet:
          ADDA.W #23,A3
          SUB.W D3,D5
          SUBQ.B #8,D5
-         SUBQ.B #1,D5
+         SUBQ.L #1,D5
          LSR.B #3,D3
          LSL.L #3,D4
          LSL.W D1,D1
@@ -315,6 +315,8 @@ eorBody
                               ;string with CR, LF
         TRAP    #15
         
+        BSR negSize
+        
         ;Do Dn
         
         MOVE.W  D1,D2
@@ -398,6 +400,8 @@ cmpBody
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
+        
+        BSR negSize
         
         ;do EA
         
@@ -508,6 +512,8 @@ orSource
                               ;string with CR, LF
         TRAP    #15
         
+        BSR negSize
+        
         ;do EA
         
         MOVE.W  D1,D2 ;check mode
@@ -549,6 +555,8 @@ orDest
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
+        
+        BSR negSize
         
         ;Do Dn
         
@@ -1393,6 +1401,8 @@ subqBody
                               ;string with CR, LF
         TRAP    #15
         
+        BSR negSize
+        
         ;immediate data
         
         ;print '#'
@@ -1521,6 +1531,8 @@ subSource
                               ;string with CR, LF
         TRAP    #15
         
+        BSR negSize
+        
         ;do EA
         
         MOVE.W  D1,D2 ;check mode
@@ -1562,6 +1574,8 @@ subDest
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
+        
+        BSR negSize
         
         ;Do Dn
         
@@ -3771,9 +3785,9 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
-eorMessage      DC.B 'EOR ',0
-cmpMessage      DC.B 'CMP ',0
-orMessage       DC.B 'OR ',0
+eorMessage      DC.B 'EOR',0
+cmpMessage      DC.B 'CMP',0
+orMessage       DC.B 'OR',0
 bclrMessage     DC.B 'BCLR ',0
 leaMessage      DC.B 'LEA ',0
 divsMessage     DC.B 'DIVS',0
@@ -3784,8 +3798,8 @@ aslMessage      DC.B 'ASL',0
 asrMessage      DC.B 'ASR',0
 lslMessage      DC.B 'LSL',0
 lsrMessage      DC.B 'LSR',0
-subqMessage     DC.B 'SUBQ ',0
-subMessage      DC.B 'SUB ',0 
+subqMessage     DC.B 'SUBQ',0
+subMessage      DC.B 'SUB',0 
 addaMessage     DC.B 'ADDA',0
 addMessage      DC.B 'ADD',0
 movemMessage    DC.B 'MOVEM',0
