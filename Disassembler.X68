@@ -49,11 +49,11 @@ start:
         
 *.............................................................................
 * Debug Mode - Comment out when done
-        ;MOVE.L      #snippet,A3
-        ;MOVE.L      #snippetEnd,A4
+        MOVE.L      #snippet,A3
+        MOVE.L      #snippetEnd,A4
 
-        MOVE.L      #begin,A3
-        MOVE.L      #end,A4
+*        MOVE.L      #begin,A3
+*        MOVE.L      #end,A4
         BRA         screenLoop
 * Debug Mode - Comment out when done
 *.............................................................................        
@@ -203,61 +203,63 @@ checkContinue:
         MOVEM.W (SP)+,D1/D2/A1
         BRA screenLoop
 
-*snippet:
-*         NOP
-*         BRA snippet
-*         BRA FarLabel
-*         BEQ snippet
-*         BGT NEG
-*         BSR snippet
-*         NEG.B D1
-*         NEG.W D2
-*         MOVE.B #$85,D1
-*         ADDI.L #30,D5
-*         RTS
-*         JSR $54
-*         CMPI.W #3,D1
-*         ORI.L  #3,D1
-*         MOVEM.L A3-A4,-(SP)
-*         MOVEM.L (SP)+,D1-A3
-*         ADD.B D1,D2
-*         ADD.B #10,D3
-*         ADDA.W #23,A3
-*         SUB.W D3,D5
-*         SUBQ.B #8,D5
-*         SUBQ.B #1,D5
-*         LSR.B #3,D3
-*         LSL.L #3,D4
-*         LSL.W D1,D1
-*         LSR.B D3,D7
-*         LSR $3563
-*         LSL $486412
-*         ASR.W #3,D3
-*         ASL.L #3,D4
-*         ASL.L D1,D1
-*         ASR.B D3,D7
-*         ASR.W $3563
-*         ASL.W $486412
-*         ROR.L #3,D3
-*         ROL.W #3,D4
-*         ROL.B D1,D1
-*         ROR D3,D7
-*         ROR $3563
-*         ROL $486412
-*         MULS #$4562,D2
-*         DIVS #$4562,D2
-*         LEA leaEAmasks,A1
-*         BCLR D1,D4
-*         BCLR #20,D5
-*         OR.B D1,D2
-*         OR.B #10,D3
-*         CMP.W D2,D5
-*         CMP.L (A3),D4
-*         EOR.W D2,D5
-*         EOR.L D4,(A3)
-*
-*         
-*snippetEnd:
+snippet:
+         NOP
+         BRA snippet
+         BRA FarLabel
+         BEQ snippet
+         BGT NEG
+         BSR snippet
+         NEG.B $3242
+         NEG.W D2
+         MOVE.B #$85,D1
+         ADDI.L #30,D5
+         RTS
+         JSR $54
+         CMPI.W #3,D1
+         ORI.L  #3,D1
+         MOVEM.L A3-A4,-(SP)
+         MOVEM.L (SP)+,D1-A3
+         ADD.B D1,D2
+         ADD.B #10,D3
+         ADDA.W #23,A3
+         SUB.W D3,D5
+         SUBQ.B #8,D5
+         SUBQ.B #1,D5
+         LSR.B #3,D3
+         LSL.L #3,D4
+         LSL.W D1,D1
+         LSR.B D3,D7
+         LSR $3563
+         LSL $486412
+         ASR.W #3,D3
+         ASL.L #3,D4
+         ASL.L D1,D1
+         ASR.B D3,D7
+         ASR.W $3563
+         ASL.W $486412
+         ROR.L #3,D3
+         ROL.W #3,D4
+         ROL.B D1,D1
+         ROR D3,D7
+         ROR $3563
+         ROL $486412
+         MULS #$4562,D2
+         DIVS #$4562,D2
+         LEA leaEAmasks,A1
+         BCLR D1,D4
+         BCLR #20,D5
+         OR.B D1,D2
+         OR.B #10,D3
+         CMP.W D2,D5
+         CMP.L (A3),D4
+         EOR.W D2,D5
+         EOR.L D4,(A3)
+         MOVE.W #$5435,D6
+         MOVE.L #$463463,D3
+
+         
+snippetEnd:
          SIMHALT
          
          
@@ -2116,7 +2118,7 @@ oriBody:
         MOVEM.L D1,-(SP) ;save D1 to the stack
         MOVE.B #',',D1 ;put ascii value of char in D1
         MOVE.B #6,D0 ;move task 6 into D0
-        TRAP #15 ;prin char
+        TRAP #15 ;print char
         MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         MOVE.W D1,D2 ;copy inst to D2
@@ -2360,6 +2362,7 @@ moveBody
                               ;string with CR, LF
         TRAP    #15
         
+        BSR moveSize
         
         MOVE.W  D1,D2 ;check source mode
         AND.B   #%00111111,D2
@@ -2393,6 +2396,32 @@ moveBody
 
         MOVEQ.L #0,D0
         RTS
+        
+moveSize:
+        MOVE.W  D1,D2 ;copy inst to D2
+        LSR.W   #8,D2 ;shift size
+        LSR.B   #4,D2
+        AND.L  #%11,D2 ;mask for size
+        MOVEQ.L #0,D6 ;clear D6
+        CMPI.W #2,D2 ;compare and then branch depending on size
+        BEQ moveSizeLong
+        BGT moveSizeWord
+        BLT moveSizeByte
+moveSizeDone:        
+        BSR printSize
+        RTS
+        
+moveSizeByte:
+        MOVE.B #0,D6
+        BRA moveSizeDone
+        
+moveSizeWord:
+        MOVE.B #1,D6
+        BRA moveSizeDone
+        
+moveSizeLong:
+        MOVE.B #2,D6
+        BRA moveSizeDone
         
 moveADestEA        DC.B %001000,0
 moveADestEAmasks   DC.B %111000,0
@@ -2983,6 +3012,7 @@ process_op_codes_exit:
 
 Get_Effective_Address:
 
+        MOVEM.L D6,-(SP)                ;save D6 data
         MOVE.B      D5,D6
         LSR.B       #3,D6               ;mode
         And.B       #%00000111,D5       ;register
@@ -3157,11 +3187,24 @@ Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing 
                        
 Addr_Immediate_Data                     ;4 = #(data) - Absolute Long Addressing Mode (100)
 
-        LEA         iData,A1            ;output 'D' for data register
-        MOVE.B      #14,D0              ;set for task to display null terminated 
-        TRAP        #15                 ;string without CR, LF
+*        LEA         iData,A1            ;output 'D' for data register
+*        MOVE.B      #14,D0              ;set for task to display null terminated 
+*        TRAP        #15                 ;string without CR, LF
         
-        *need another input param for size
+        MOVEM.L (SP)+,D6                 ;restore D6 data
+        MOVEM.L D6,-(SP)                 ;save D6 data again to balance stack
+
+        ;print '#'
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #'#',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;print char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        CMPI.B #1,D6
+        BLE Addr_Abs_Short
+        BGT Addr_Abs_Long
+        
         BRA         Get_Effective_Address_Exit  ;return
 
 invalidEA:
@@ -3170,6 +3213,7 @@ invalidEA:
  
 Get_Effective_Address_Exit:     
 
+        MOVEM.L (SP)+,D6                 ;restore D6 data
         RTS                             ;return
 
 ***assume size in D6. 00 = byte, 01 = word, 10 = long
@@ -3502,7 +3546,7 @@ cmpiMessage     DC.B 'CMPI ',0
 jsrMessage      DC.B 'JSR ',0
 rtsMessage      DC.B 'RTS ',0
 nopMessage      DC.B 'NOP ',0 
-moveMessage     DC.B 'MOVE ',0
+moveMessage     DC.B 'MOVE',0
 bccMessage      DC.B 'B',0
 negMessage      DC.B 'NEG',0
 dataMessage     DC.B 'DATA ',0
