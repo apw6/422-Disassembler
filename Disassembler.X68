@@ -48,11 +48,11 @@ start:
         
 *.............................................................................
 * Debug Mode - Comment out when done
-        MOVE.L      #snippet,A3
-        MOVE.L      #snippetEnd,A4
+        ;MOVE.L      #snippet,A3
+        ;MOVE.L      #snippetEnd,A4
 
-        ;MOVE.L      #begin,A3
-        ;MOVE.L      #end,A4
+        MOVE.L      #begin,A3
+        MOVE.L      #end,A4
         BRA         screenLoop
 * Debug Mode - Comment out when done
 *.............................................................................        
@@ -200,60 +200,60 @@ checkContinue:
         MOVEM.W (SP)+,D1/D2/A1
         BRA screenLoop
 
-snippet:
-         NOP
-         BRA snippet
-         BRA FarLabel
-         BEQ snippet
-         BGT NEG
-         BSR snippet
-         NEG D1
-         MOVE.W $8500,D1
-         ADDI.W #30,D5
-         RTS
-         JSR $54
-         CMPI #3,D1
-         ORI  #3,D1
-         MOVEM.L A3-A4,-(SP)
-         ADD.B D1,D2
-         ADD.B #10,D3
-         ADDA.L #1123,A3
-         SUB.W D3,D5
-         SUBQ.B #8,D5
-         SUBQ.B #1,D5
-         LSR #3,D3
-         LSL #3,D4
-         LSL D1,D1
-         LSR D3,D7
-         LSR $3563
-         LSL $486412
-         ASR #3,D3
-         ASL #3,D4
-         ASL D1,D1
-         ASR D3,D7
-         ASR $3563
-         ASL $486412
-         ROR #3,D3
-         ROL #3,D4
-         ROL D1,D1
-         ROR D3,D7
-         ROR $3563
-         ROL $486412
-         MULS #$4562,D2
-         DIVS #$4562,D2
-         LEA leaEAmasks,A1
-         BCLR D1,D4
-         BCLR #20,D5
-         OR.B D1,D2
-         OR.B #10,D3
-         CMP.W D2,D5
-         CMP.L (A3),D4
-         EOR.W D2,D5
-         EOR.L D4,(A3)
+;snippet:
+         ;NOP
+         ;BRA snippet
+         ;BRA FarLabel
+         ;BEQ snippet
+         ;BGT NEG
+         ;BSR snippet
+         ;NEG D1
+         ;MOVE.W $8500,D1
+         ;ADDI.W #30,D5
+         ;RTS
+         ;JSR $54
+         ;CMPI #3,D1
+         ;ORI  #3,D1
+         ;MOVEM.L A3-A4,-(SP)
+         ;ADD.B D1,D2
+         ;ADD.B #10,D3
+         ;ADDA.L #1123,A3
+         ;SUB.W D3,D5
+         ;SUBQ.B #8,D5
+         ;SUBQ.B #1,D5
+         ;LSR #3,D3
+         ;LSL #3,D4
+         ;LSL D1,D1
+         ;LSR D3,D7
+         ;LSR $3563
+         ;LSL $486412
+         ;ASR #3,D3
+         ;ASL #3,D4
+         ;ASL D1,D1
+         ;ASR D3,D7
+         ;ASR $3563
+         ;ASL $486412
+         ;ROR #3,D3
+         ;ROL #3,D4
+         ;ROL D1,D1
+         ;ROR D3,D7
+         ;ROR $3563
+         ;ROL $486412
+         ;MULS #$4562,D2
+         ;DIVS #$4562,D2
+         ;LEA leaEAmasks,A1
+         ;BCLR D1,D4
+         ;BCLR #20,D5
+         ;OR.B D1,D2
+         ;OR.B #10,D3
+         ;CMP.W D2,D5
+         ;CMP.L (A3),D4
+         ;EOR.W D2,D5
+         ;EOR.L D4,(A3)
          
 
          
-snippetEnd:
+;snippetEnd:
          SIMHALT
          
          
@@ -3454,6 +3454,7 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
+
 
 
 
