@@ -3260,7 +3260,7 @@ Addr_Reg_Indirect_Inc                   ;3 = (An)+ - Address Register Indirect w
         
         BRA         Get_Effective_Address_Exit  ;return
 
-Addr_Reg_Indirect_Dec                   ;4 = –(An) - Address Register Indirect with Predecrement (100)
+Addr_Reg_Indirect_Dec                   ;4 = ?(An) - Address Register Indirect with Predecrement (100)
 
         LEA         minus,A1            ;output '-' for Predecrement
         MOVE.B      #14,D0              ;set for task to display null terminated 
@@ -3641,38 +3641,6 @@ endLocation         DC.L    0
 
    
     END    START        ; last line of source
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 *~Font name~Courier New~
 *~Font size~12~
 *~Tab type~1~
