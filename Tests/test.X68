@@ -4,45 +4,45 @@
 * Date       :
 * Description:
 *-----------------------------------------------------------
-    ORG    $1000
+    ORG    $5000
 START:                  ; first instruction of program
 
 * Put program code here
 
 *----------ADD----------
-    ADD.B   D0,D1
+    
     ADD.B   D1,D2
-    ADD.B   #12,D2          
-    ADD.B   (A0),D2
+             
+    ADD.B   (A1),D2
     ADD.B   (A1)+,D1
     ADD.B   D2,(A3)+
     ADD.B   -(A2),D3 
     ADD.B   D4,-(A3)
     ADD.B   D1,(A2)
-    ADD.B   $AA,D4
+    ADD.B   $4565,D4
     ADD.B   $AAAA,D5
-    ADD.B   $AAAAAAAA,D6
-    ADD.B   $12341234,D6
+    ADD.B   $5323,D4
+    ADD.B   $12341234,D4
 
   
 
-    ADD.W   D0,D1
+   
     ADD.W   D1,D2
     ADD.W   #12,D2          
-    ADD.W   (A0),D2
+    ADD.W   (A1),D2
     ADD.W   (A1)+,D1
-    ADD.W   D2,(A3)+
+    ADD.W   D2,(A3)
     ADD.W   -(A2),D3 
     ADD.W   D4,-(A3)
     ADD.W   D1,(A2)
     ADD.W   $AA,D4
-    ADD.W   $AAAA,D5
-    ADD.W   $AAAAAAAA,D6
+    ADD.W   $33432212,D5
+    ADD.W   $13425674,D6
 
-    ADD.L   D0,D1
+   
     ADD.L   D1,D2
     ADD.L   #12,D2          
-    ADD.L   (A0),D2
+    ADD.L   (A1),D2
     ADD.L   (A1)+,D1
     ADD.L   D2,(A3)+
     ADD.L   -(A2),D3 
@@ -205,7 +205,11 @@ TESTBNE
 
 *--------DIVS-------
 
-
+    DIVS.W  (A2)+,D2
+    DIVS.W  -(A3),D3
+    DIVS.W  $AA12,D4
+    DIVS.W  $5200,D5
+    
 *-------MULU--------
 
 
@@ -893,6 +897,7 @@ TESTBNE
 * Put variables and constants here
 
     END    START        ; last line of source
+
 
 
 *~Font name~Courier New~

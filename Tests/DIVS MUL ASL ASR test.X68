@@ -4,26 +4,26 @@
 * Date       :
 * Description: DIVS, MUL, BSTS, ASL/ASR test
 *-----------------------------------------------------------
-    ORG    $5000
+    ORG    $1000
 START:                  ; first instruction of program
 
 * Put program code here
 *--------DIVS-------
 
 
-    DIVS.W  D0,D1
+  
     DIVS.W  (A2)+,D2
     DIVS.W  -(A3),D3
     DIVS.W  $AA12,D4
-    DIVS.W  $1200,D5
+    DIVS.W  $5200,D5
 
 *-------MULU--------
 
 
 
-    MULU.W  D2,D5       ;same data as DIVS test
+    MULU.W  D2,D5       
+    MULU.W  #3422,D4
     MULU.W  D0,D1
-    MULU.W  #5112,D2
     MULU.W  (A1),D1
     MULU.W  (A2)+,D2
     MULU.W  -(A3),D3
@@ -64,6 +64,7 @@ START:                  ; first instruction of program
 * Put variables and constants here
 
     END    START        ; last line of source
+
 
 
 
