@@ -166,13 +166,13 @@ match:
         RTS
         
 
-instOPList  DC.W eorInstruction
+instOPList  DC.W moveaInstruction,eorInstruction
 instOPList2 DC.W cmpInstruction,orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList3 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList  DC.W eorMask
+instMaskList  DC.W moveaMask,eorMask
 instMaskList2 DC.W cmpMask,orMask,bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
 instMaskList3 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList  DC.L EOR
+instLabelList  DC.L MOVEA,EOR
 instLabelList2 DC.L CMP,OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
 instLabelList3 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
@@ -210,6 +210,7 @@ snippet:
          BEQ snippet
          BGT NEG
          BSR snippet
+         MOVEA.W #$5668,A4
          NEG.B $3242
          NEG.W D2
          MOVE.B #$85,D1
@@ -489,8 +490,6 @@ validOrDestEA:
         BEQ falsePositive ;branch if it is
         
         MOVE.W D1,D2 ;copy instruction to D2
-        LSR.W #6,D2  ;move mode
-        BSR switchModeAndReg ;switch register and mode
         AND.B D5,D2  ;mask D2
         
         LEA addDestEA,A1 ;load the list of valid modes
@@ -1496,8 +1495,6 @@ validSubDestEA:
         BEQ falsePositive ;branch if it is
         
         MOVE.W D1,D2 ;copy instruction to D2
-        LSR.W #6,D2  ;move mode
-        BSR switchModeAndReg ;switch register and mode
         AND.B D5,D2  ;mask D2
         
         LEA addDestEA,A1 ;load the list of valid modes
@@ -1641,6 +1638,15 @@ addaBody
                               ;string with CR, LF
         TRAP    #15
         
+        ;size
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        ;make it look like NEG's size
+        LSR.W #2,D1 ;shift opmode bits over to use them as size
+        AND.B #%01111111,D1 ;clear bit next to size
+        ADDI.W #%01000000,D1 ;add 1 to size to make it look like a word or long
+        BSR negSize
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
         ;do EA
         
         MOVE.W  D1,D2 ;check mode
@@ -1733,8 +1739,6 @@ validAddDestEA:
         BEQ falsePositive ;branch if it is
         
         MOVE.W D1,D2 ;copy instruction to D2
-        LSR.W #6,D2  ;move mode
-        BSR switchModeAndReg ;switch register and mode
         AND.B D5,D2  ;mask D2
         
         LEA addDestEA,A1 ;load the list of valid modes
@@ -1752,6 +1756,8 @@ addSource
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
+        
+        BSR negSize
         
         ;do EA
         
@@ -1790,10 +1796,12 @@ addSource
 
 addDest
 
-        LEA     addMessage,A1  ;move string for MOVE
+        LEA     addMessage,A1 ;move string for MOVE
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string with CR, LF
         TRAP    #15
+        
+        BSR negSize
         
         ;Do Dn
         
@@ -2648,7 +2656,7 @@ MOVEA:
 
         MOVEQ.L #0, D0 ;clear D0
         
-validMoveASourceModes:
+validMoveAModes:
         
         LEA moveSourceEAmasks,A1 ;load the list of masks
         ADDA.L D0,A1 ;displace to a specific mask
@@ -2664,35 +2672,11 @@ validMoveASourceModes:
         ADDA.L D0,A1 ;displace to a specific mode
         MOVE.B (A1),D4 ;move mode to D4
         CMP.B D4,D2 ;compare mode to masked value
-        BEQ  checkMoveADest ;if its match, its a valid mode and we can procede
+        BEQ  moveABody ;if its match, its a valid mode and we can procede
         
         ADDQ.L #1,D0 ;add one to displacement
-        BRA validMoveASourceModes ;check for next mode
+        BRA validMoveAModes ;check for next mode
         
-checkMoveADest:
-        MOVEQ.L #0, D0 ;clear D0
-validMoveADestModes:
-        
-        LEA moveADestEAmasks,A1 ;load the list of masks
-        ADDA.L D0,A1 ;displace to a specific mask
-        MOVE.B (A1),D5 ;move the mask to D5
-        
-        CMPI.B #0,D5 ;check if the mask is 0
-        BEQ falsePositive ;branch if it is
-        
-        MOVE.W D1,D2 ;copy instruction to D2
-        LSR.W #5,D2  ;move mode
-        BSR switchModeAndReg ;switch register and mode
-        AND.B D5,D2  ;mask D2
-        
-        LEA moveADestEA,A1 ;load the list of valid modes
-        ADDA.L D0,A1 ;displace to a specific mode
-        MOVE.B (A1),D4 ;move mode to D4
-        CMP.B D4,D2 ;compare mode to masked value
-        BEQ moveABody ;if its match, its a valid mode and we can procede
-        
-        ADDQ.L #1,D0 ;add one to displacement
-        BRA validMoveADestModes ;check for next mode
 moveABody:
         MOVE.W  D1,D2 ;copy inst to D2
         AND.W  #%0011000000000000,D2 ;mask word for size
@@ -2703,8 +2687,45 @@ moveABody:
 
 
         LEA     moveAMessage,A1  ;move string for MOVE
-        MOVE.B  #13,D0        ;set for task to display null terminated 
-                              ;string with CR, LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        BSR moveSize
+        
+        ;Do EA
+        
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        
+        ;Then do An
+        
+        MOVE.W  D1,D2
+        LSR.W   #8,D2 ;move reg into first byte
+        LSR.B   #1,D2 ;line it up to least sig bit
+        AND.B   #%00000111,D2 ;force mode to An
+        ADDQ.B  #8,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
         TRAP    #15
 
         MOVEQ.L #0,D0
@@ -3631,6 +3652,7 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+moveaInstruction EQU %0000000001000000
 eorInstruction   EQU %1011000000000000
 cmpInstruction   EQU %1011000000000000
 orInstruction    EQU %1000000000000000
@@ -3665,6 +3687,7 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+moveaMask EQU %1100000111000000
 eorMask   EQU %1111000000000000
 cmpMask   EQU %1111000000000000
 orMask    EQU %1111000000000000
@@ -3755,8 +3778,8 @@ lslMessage      DC.B 'LSL',0
 lsrMessage      DC.B 'LSR',0
 subqMessage     DC.B 'SUBQ ',0
 subMessage      DC.B 'SUB ',0 
-addaMessage     DC.B 'ADDA ',0
-addMessage      DC.B 'ADD ',0
+addaMessage     DC.B 'ADDA',0
+addMessage      DC.B 'ADD',0
 movemMessage    DC.B 'MOVEM',0
 addiMessage     DC.B 'ADDI',0
 oriMessage      DC.B 'ORI',0
@@ -3768,7 +3791,7 @@ moveMessage     DC.B 'MOVE',0
 bccMessage      DC.B 'B',0
 negMessage      DC.B 'NEG',0
 dataMessage     DC.B 'DATA ',0
-moveaMessage    DC.B 'MOVEA ',0
+moveaMessage    DC.B 'MOVEA',0
 
 xxxW            DC.B '(xxx).W: ',0
 xxxL            DC.B '(xxx).L: ',0
@@ -3791,6 +3814,7 @@ endLocation         DC.L    0
 
    
     END    START        ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~12~
