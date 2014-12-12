@@ -848,7 +848,11 @@ divsBody:
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string without CR, LF
         TRAP    #15
-
+        
+        ;set size to word
+        MOVEQ.L #1,D6
+        BSR printSize
+        
         ;do source EA
         MOVE.W  D1,D2 ;check mode
         AND.B   #%00111111,D2
@@ -921,6 +925,10 @@ mulsBody:
         MOVE.B  #14,D0        ;set for task to display null terminated 
                               ;string without CR, LF
         TRAP    #15
+        
+        ;set size to word
+        MOVEQ.L #1,D6
+        BSR printSize
 
         ;do source EA
         MOVE.W  D1,D2 ;check mode
@@ -3768,8 +3776,8 @@ cmpMessage      DC.B 'CMP ',0
 orMessage       DC.B 'OR ',0
 bclrMessage     DC.B 'BCLR ',0
 leaMessage      DC.B 'LEA ',0
-divsMessage     DC.B 'DIVS ',0
-mulsMessage     DC.B 'MULS ',0
+divsMessage     DC.B 'DIVS',0
+mulsMessage     DC.B 'MULS',0
 rslMessage      DC.B 'ROL',0
 rsrMessage      DC.B 'ROR',0
 aslMessage      DC.B 'ASL',0
