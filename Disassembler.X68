@@ -1201,7 +1201,13 @@ LSLEA:
         BRA lsrlweaBody        
         
 lsrlweaBody:
-
+        
+        ;print ' '
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #' ',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;print char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
         
         MOVE.W  D1,D2 ;check mode
         AND.B   #%00111111,D2
@@ -1259,7 +1265,9 @@ LSLreg:
         BRA LSRLregBody
         
 LSRLregBody:
-                    
+        
+        BSR negSize        
+            
         ;check i/r
         MOVEM.L D1,-(SP)
         BSR LSRLcheckIR
@@ -3739,12 +3747,12 @@ bclrMessage     DC.B 'BCLR ',0
 leaMessage      DC.B 'LEA ',0
 divsMessage     DC.B 'DIVS ',0
 mulsMessage     DC.B 'MULS ',0
-rslMessage      DC.B 'ROL ',0
-rsrMessage      DC.B 'ROR ',0
-aslMessage      DC.B 'ASL ',0
-asrMessage      DC.B 'ASR ',0
-lslMessage      DC.B 'LSL ',0
-lsrMessage      DC.B 'LSR ',0
+rslMessage      DC.B 'ROL',0
+rsrMessage      DC.B 'ROR',0
+aslMessage      DC.B 'ASL',0
+asrMessage      DC.B 'ASR',0
+lslMessage      DC.B 'LSL',0
+lsrMessage      DC.B 'LSR',0
 subqMessage     DC.B 'SUBQ ',0
 subMessage      DC.B 'SUB ',0 
 addaMessage     DC.B 'ADDA ',0
