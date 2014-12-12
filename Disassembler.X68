@@ -50,9 +50,15 @@ start:
         
 *..................................................................................................
 * Debug Mode - Comment out when done
+<<<<<<< HEAD
 *        MOVE.L      #snippet,A3
 *        MOVE.L      #snippetEnd,A4
 *        BRA         main_Loop
+=======
+        MOVE.L      #snippet,A3
+        MOVE.L      #snippetEnd,A4
+        BRA         screenLoop
+>>>>>>> origin/master
 * Debug Mode - Comment out when done
 *..................................................................................................        
         
@@ -62,18 +68,31 @@ prompt_user:
         CMP.W       #-1,D3              ;Did the choose to exit, or error occur?
         BEQ         fin                 ;Yes, then exit
         
-        BRA         main_Loop
+        BRA         screenLoop
         ;BSR         process_op_codes
         BRA         prompt_user
                 
+<<<<<<< HEAD
 ***************************************************************************************************
 *                                     Begin processing OP Codes
 ***************************************************************************************************
+=======
+******************************************************************************
+*                   Begin processing OP Codes
+******************************************************************************
+screenLoop:
+            MOVE.B #30,D2
+>>>>>>> origin/master
  
 main_Loop:
 
         CMPA.L      A3,A4               ;check end of prog
         BLE fin
+        
+        CMPI.B #0,D2
+        BEQ checkContinue
+        SUBQ.B #1,D2
+        MOVEM.W D2,-(SP) ;save D2 for next iteration
         
         ;print memory location
         MOVEM.L     D3/D6,-(SP)
@@ -106,8 +125,14 @@ main_Loop:
         MOVEM.L     (SP)+,A3-A4
         ADDA.L      D7,A3               ;look past data that was part of the instruction
         
+<<<<<<< HEAD
         ADDQ.L      #word,A3
         BRA         main_Loop 
+=======
+        ADDQ.L  #word,A3
+        MOVEM.W (SP)+,D2 ;restore D2 for next iteration
+        BRA     main_Loop 
+>>>>>>> origin/master
         
 checkOPcode:
 
@@ -148,6 +173,7 @@ match:
         BEQ         checkOPcode
         RTS
         
+<<<<<<< HEAD
 * Load list for instructions
 instOPList  DC.W orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
@@ -155,6 +181,45 @@ instMaskList  DC.W orMask,bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlwe
 instMaskList2 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
 instLabelList  DC.L OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
 instLabelList2 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+=======
+
+instOPList  DC.W eorInstruction
+instOPList2 DC.W cmpInstruction,orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
+instOPList3 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
+instMaskList  DC.W eorMask
+instMaskList2 DC.W cmpMask,orMask,bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
+instMaskList3 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
+instLabelList  DC.L EOR
+instLabelList2 DC.L CMP,OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
+instLabelList3 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
+
+checkContinue:
+        
+        MOVEM.W D1/D2/A1,-(SP) ;save reg that are modified just in case
+        
+        LEA     continuePrompt,A1  ;move string
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        
+        MOVE.B  #5,D0        ;set for task to read single char into D1
+        TRAP    #15
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        ;if either case of 'Q' is entered, quit the program
+        CMPI.B #'q',D1
+        BEQ fin
+        CMPI.B #'Q',D1
+        BEQ fin
+        
+        MOVEM.W (SP)+,D1/D2/A1
+        BRA screenLoop
+>>>>>>> origin/master
 
 snippet:
          NOP
@@ -200,10 +265,190 @@ snippet:
          LEA leaEAmasks,A1
          BCLR D1,D4
          BCLR #20,D5
+         OR.B D1,D2
+         OR.B #10,D3
+         CMP.W D2,D5
+         CMP.L (A3),D4
+         EOR.W D2,D5
+         EOR.L D4,(A3)
+         
 
          
 snippetEnd:
          SIMHALT
+         
+         
+eorEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,0
+eorEAmasks DC.B %111000,%111000,%111000,%111000,%111111,%111111,0
+
+
+
+EOR:
+        
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+        ;Figure out if EA is source or destination
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W  #6,D2 ;shift opmode to least sig bit of least sig byte
+        ANDI.B #%00000111,D2 ;mask out rest of byte
+        CMPI.B #3,D2 ;compare to 3
+        BLE falsePositive ;3 or less is not valid
+        
+        CMPI.B #%111,D2 ;compare to 7
+        BEQ falsePositive ;thats not valid
+        BRA validEorEA ;all thats left is valid EA size 
+        
+validEorEA:
+        
+        LEA eorEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA eorEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  eorBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validEorEA ;check for next mode
+                
+
+eorBody
+
+        LEA     eorMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        
+        ;Do Dn
+        
+        MOVE.W  D1,D2
+        LSR.W   #8,D2 ;move reg into first byte
+        LSR.B   #1,D2 ;line it up to least sig bit
+        AND.B   #%00000111,D2 ;force mode to Dn
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        ;Then do EA
+        
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+
+
+CMP:
+        
+
+        
+        MOVEQ.L #0, D0 ;clear D0
+        
+        ;Figure out if EA is source or destination
+        MOVE.W D1,D2 ;copy inst to D2
+        LSR.W  #6,D2 ;shift opmode to least sig bit of least sig byte
+        ANDI.B #%00000111,D2 ;mask out rest of byte
+        CMPI.B #2,D2 ;compare to 2
+        BLE validCmpEA ;2 or less is EA 
+        
+        BRA falsePositive ;thats not valid
+        
+validCmpEA:
+        
+        LEA moveSourceEAmasks,A1 ;load the list of masks
+        ADDA.L D0,A1 ;displace to a specific mask
+        MOVE.B (A1),D5 ;move the mask to D5
+        
+        CMPI.B #0,D5 ;check if the mask is 0
+        BEQ falsePositive ;branch if it is
+        
+        MOVE.B D1,D2 ;copy instruction to D2
+        AND.B D5,D2  ;mask D2
+        
+        LEA moveSourceEA,A1 ;load the list of valid modes
+        ADDA.L D0,A1 ;displace to a specific mode
+        MOVE.B (A1),D4 ;move mode to D4
+        CMP.B D4,D2 ;compare mode to masked value
+        BEQ  cmpBody ;if its match, its a valid mode and we can procede
+        
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validCmpEA ;check for next mode
+        
+        
+        
+cmpBody
+
+        LEA     cmpMessage,A1  ;move string for MOVE
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string with CR, LF
+        TRAP    #15
+        
+        ;do EA
+        
+        MOVE.W  D1,D2 ;check mode
+        AND.B   #%00111111,D2
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
+        ;Then do Dn
+        
+        MOVE.W  D1,D2
+        LSR.W   #8,D2 ;move reg into first byte
+        LSR.B   #1,D2 ;line it up to least sig bit
+        AND.B   #%00000111,D2 ;force mode to Dn
+        MOVE.B  D2,D5
+        MOVEM.L D1,-(SP)
+        BSR     Get_Effective_Address
+        MOVEM.L (SP)+,D1
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+
+        MOVEQ.L #0,D0
+        RTS
+
+
 
 orSourceEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,%111100,0
 orSourceEAmasks DC.B %111000,%111000,%111000,%111000,%111111,%111111,%111111,0
@@ -245,8 +490,13 @@ validORSourceEA:
         CMP.B       D4,D2               ;compare mode to masked value
         BEQ         orSource            ;if its match, its a valid mode and we can procede
         
+<<<<<<< HEAD
         ADDQ.L      #1,D0               ;add one to displacement
         BRA         validAddSourceEA    ;check for next mode
+=======
+        ADDQ.L #1,D0 ;add one to displacement
+        BRA validOrSourceEA ;check for next mode
+>>>>>>> origin/master
         
         
 validOrDestEA:
@@ -1945,6 +2195,13 @@ CMPIBody:
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
         
+        ;print ','
+        MOVEM.L D1,-(SP) ;save D1 to the stack
+        MOVE.B #',',D1 ;put ascii value of char in D1
+        MOVE.B #6,D0 ;move task 6 into D0
+        TRAP #15 ;prin char
+        MOVEM.L (SP)+,D1 ;pull D1 off the stack
+        
         MOVE.W D1,D2 ;copy inst to D2
         AND #%000000000111111,D2 ;and out everything but modes and regs
         MOVE.B D2,D5 ; copy to D5 for following BSR
@@ -2257,22 +2514,35 @@ foundCC:
         
 BccByte:
         
+        MOVE.B D1,D1 ;lazy check if negative
+        
+        BMI signExtendByte
+        
+        AND.L #$000000FF,D1 ;mask out rest of reg just in case
+        
         MOVEQ.L #0,D7 ;pass back no extra data followed
         BRA     BccDone
-BccWord:
-        MOVE.W  (A3),D1
         
+signExtendByte:        
+        
+        OR.L #$FFFFFF00,D1 ;extend to long by set all bits not part of the
+                           ;least significant byte
+        
+        MOVEQ.L #0,D7 ;pass back no extra data followed
+        BRA     BccDone
+
+BccWord:
+        MOVEA.W  (A3),A1 ;sign extend word
+        MOVE.L   A1,D1
         MOVEQ.L #word,D7 ;pass back an extra word followed
         BRA     BccDone
 BccLong:
-        MOVE.L  (A3),D1
-        
+        MOVE.L  (A3),D1 
         MOVEQ.L #long,D7 ;pass back an extra long followed
         BRA     BccDone
 BccDone:
 
-        MOVE.W  #16,D2 ;put base in D2
-        MOVE.W  #15,D0  ;put task #15 in D0
+        MOVE.W  #3,D0  ;put task #15 in D0
         TRAP    #15
         
         LEA     clearLine,A1  ;move string for a CR and LF
@@ -2290,9 +2560,12 @@ unknownOpCode:
                               ;string without CR, LF
         TRAP    #15
         
-        MOVE.B  #16,D2        ;set for displaying a base16(hex) number in D1
-        MOVE.B  #15,D0
-        TRAP    #15
+        ;print word in D1
+        MOVEM.L D6/D3,-(SP)
+        MOVE.B #1,D6 ;put size of word in D6
+        MOVE.L D1,D3 ;move data at D1 to D3
+        BSR outputHex
+        MOVEM.L (SP)+,D6/D3
         
         LEA     clearLine,A1  ;move string for a CR and LF
         MOVE.B  #14,D0        ;set for task to display null terminated 
@@ -2311,9 +2584,11 @@ handlebytedata:
         
         LSR.W   #8,D1 ;shift the word read into D1 by a byte
         
-        MOVE.B  #16,D2        ;set for displaying a base16(hex) number in D1
-        MOVE.B  #15,D0
-        TRAP    #15
+        MOVEM.L D6/D3,-(SP)
+        MOVE.B #0,D6 ;put size of byte in D6
+        MOVE.B D1,D3 ;move data at D1 to D3
+        BSR outputHex
+        MOVEM.L (SP)+,D6/D3
         
         LEA     clearLine,A1  ;move string for a CR and LF
         MOVE.B  #14,D0        ;set for task to display null terminated 
@@ -3044,6 +3319,8 @@ spc_len         DC.B    spc_len-spc
 
 ***list of OP codes
 
+eorInstruction   EQU %1011000000000000
+cmpInstruction   EQU %1011000000000000
 orInstruction    EQU %1000000000000000
 bclrdataInstruction EQU %0000100010000000
 bclrInstruction  EQU %0000000110000000
@@ -3076,6 +3353,8 @@ dataInstruction  EQU 0
 
 ***list of OP masks
 
+eorMask   EQU %1111000000000000
+cmpMask   EQU %1111000000000000
 orMask    EQU %1111000000000000
 bclrdataMask EQU %1111111111000000
 bclrMask  EQU %1111000111000000
@@ -3149,6 +3428,8 @@ endLocationPrompt   DC.B    'Enter end location',0
 
 clearLine  DC.B $0D,$0A,0
 
+eorMessage      DC.B 'EOR ',0
+cmpMessage      DC.B 'CMP ',0
 orMessage       DC.B 'OR ',0
 bclrMessage     DC.B 'BCLR ',0
 leaMessage      DC.B 'LEA ',0
@@ -3188,6 +3469,8 @@ plus            DC.B '+', 0
 minus           DC.B '-', 0
 lPrn            DC.B '(', 0
 rPrn            DC.B ')', 0
+
+continuePrompt  DC.B 'Enter "Q" or "q" to quit or any other key to continue: ',0
 thankyoumessage DC.B 'Program Complete. Thank You!',0
 
 startLocation       DC.L    0
