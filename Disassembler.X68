@@ -50,7 +50,7 @@ start:
 * Debug Mode - Comment out when done
         MOVE.L      #snippet,A3
         MOVE.L      #snippetEnd,A4
-        BRA         main_Loop
+        BRA         screenLoop
 * Debug Mode - Comment out when done
 *.............................................................................        
         
@@ -60,16 +60,17 @@ prompt_user:
         CMP.W       #-1,D3              ;Did the choose to exit, or error occur?
         BEQ         fin                 ;Yes, then exit
         
-        BRA         main_Loop
+        BRA         screenLoop
         ;BSR         process_op_codes
         BRA         prompt_user
                 
 ******************************************************************************
 *                   Begin processing OP Codes
 ******************************************************************************
-main_Loop:
+screenLoop:
             MOVE.B #30,D2
  
+main_Loop:
 
         CMPA.L A3,A4 ;check end of prog
         BLE fin
@@ -110,8 +111,9 @@ main_Loop:
         MOVEM.L (SP)+,A3-A4
         ADDA.L  D7,A3 ;look past data that was part of the instruction
         
-        ADDQ.L      #word,A3
-        BRA         main_Loop 
+        ADDQ.L  #word,A3
+        MOVEM.W (SP)+,D2 ;restore D2 for next iteration
+        BRA     main_Loop 
         
 checkOPcode:
 
@@ -156,12 +158,6 @@ match:
         RTS
         
 
-instOPList  DC.W orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
-instOPList2 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
-instMaskList  DC.W orMask,bclrdataMask,bclrMask,leaMask,divsMask,mulsMask,rsrlweaMask,rsrlregMask,asrlweaMask,asrlregMask,lsrlweaMask,lsrlregMask
-instMaskList2 DC.W subqMask,subMask,addaMask,addMask,movemMask,addiMask,oriMask,cmpiMask,jsrMask,rtsMask,negMask,NoOpMask,moveMask,bccMask,dataMask          
-instLabelList  DC.L OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
-instLabelList2 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 instOPList  DC.W eorInstruction
 instOPList2 DC.W cmpInstruction,orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
 instOPList3 DC.W subqInstruction,subInstruction,addaInstruction,addInstruction,movemInstruction,addiInstruction,oriInstruction,cmpiInstruction,jsrInstruction,rtsInstruction,negInstruction,NoOpInstruction,moveInstruction,bccInstruction,dataInstruction         
@@ -3071,7 +3067,7 @@ Addr_Reg_Indirect_Inc                   ;3 = (An)+ - Address Register Indirect w
         
         BRA         Get_Effective_Address_Exit  ;return
 
-Addr_Reg_Indirect_Dec                   ;4 = –(An) - Address Register Indirect with Predecrement (100)
+Addr_Reg_Indirect_Dec                   ;4 = ?(An) - Address Register Indirect with Predecrement (100)
 
         LEA         minus,A1            ;output '-' for Predecrement
         MOVE.B      #14,D0              ;set for task to display null terminated 
@@ -3453,11 +3449,6 @@ endLocation         DC.L    0
    
     END    START        ; last line of source
     
-
-
-
-
-
 
 
 
