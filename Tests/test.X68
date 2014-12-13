@@ -4,7 +4,7 @@
 * Date       :
 * Description:
 *-----------------------------------------------------------
-    ORG    $5000
+    ORG    $5001
 START:                  ; first instruction of program
 
 * Put program code here
@@ -897,6 +897,7 @@ TESTBNE
 * Put variables and constants here
 
     END    START        ; last line of source
+
 
 
 
