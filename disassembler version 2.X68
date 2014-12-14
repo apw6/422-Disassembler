@@ -49,14 +49,8 @@ start:
         
 *.............................................................................
 * Debug Mode - Comment out when done
-<<<<<<< HEAD
 *        MOVE.L      #snippet,A3
 *        MOVE.L      #snippetEnd,A4
-=======
-        ;MOVE.L      #snippet,A3
-        ;MOVE.L      #snippetEnd,A4
-
->>>>>>> origin/master
 *        MOVE.L      #begin,A3
 *        MOVE.L      #end,A4
 *        MOVE.L      #$00004000,A3
@@ -231,8 +225,7 @@ checkNextAddr:
         CMPI.B #'Q',D1
         BEQ fin
         
-<<<<<<< HEAD
-        MOVE.W #$FF00, D1     ;Clear screen value
+        MOVE.W  #$FF00, D1     ;Clear screen value
         MOVE.B  #11,D0        ;set for task to clear screen
         TRAP    #15
         
@@ -299,12 +292,6 @@ checkNextAddr:
 *         SIMHALT
 * Debug Mode end:   Comment out when done
 *.............................................................................
-         
-=======
-        MOVEM.W (SP)+,D1/D2/A1
-        BRA screenLoop
-
->>>>>>> origin/master
          
          
 eorEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,0
@@ -3913,6 +3900,7 @@ START:                  ; first instruction of program
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 *~Font name~Courier New~
