@@ -24,7 +24,7 @@
 ***************************************************************************
 
 stack   EQU   $00005000
-begin   EQU   $00005001
+begin   EQU   $00000000
 end     EQU   $00FFFFFE
 byte    EQU   1
 word    EQU   2
@@ -49,12 +49,13 @@ start:
         
 *.............................................................................
 * Debug Mode - Comment out when done
-        MOVE.L      #snippet,A3
-        MOVE.L      #snippetEnd,A4
-
+*        MOVE.L      #snippet,A3
+*        MOVE.L      #snippetEnd,A4
 *        MOVE.L      #begin,A3
 *        MOVE.L      #end,A4
-        BRA         screenLoop
+*        MOVE.L      #$00004000,A3
+*        MOVE.L      #$00005000,A4
+*        BRA         screenLoop
 * Debug Mode - Comment out when done
 *.............................................................................        
         
@@ -74,7 +75,7 @@ prompt_user:
 
 screenLoop:
 
-            MOVE.B #30,D2
+        MOVE.B #30,D2
  
 main_Loop:
 
@@ -195,73 +196,103 @@ checkContinue:
         TRAP    #15
         
         ;if either case of 'Q' is entered, quit the program
+        CMPI.B #'s',D1
+        BEQ checkNextAddr
+        CMPI.B #'S',D1
+        BEQ checkNextAddr
+        
+        MOVEM.W (SP)+,D1/D2/A1
+        BRA screenLoop
+
+checkNextAddr:
+
+        LEA     nextAddrPrompt,A1  ;move string
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
+        
+        MOVE.B  #5,D0         ;set for task to read single char into D1
+        TRAP    #15
+        
+        LEA     clearLine,A1  ;move string for a CR and LF
+        MOVE.B  #14,D0        ;set for task to display null terminated 
+                              ;string without CR, LF
+        TRAP    #15
+        
         CMPI.B #'q',D1
         BEQ fin
         CMPI.B #'Q',D1
         BEQ fin
         
-        MOVEM.W (SP)+,D1/D2/A1
-        BRA screenLoop
+        MOVE.W #$FF00, D1     ;Clear screen value
+        MOVE.B  #11,D0        ;set for task to clear screen
+        TRAP    #15
+        
+        BRA prompt_user
 
-snippet:
-         NOP
-         BRA snippet
-         BRA FarLabel
-         BEQ snippet
-         BGT NEG
-         BSR snippet
-         MOVEA.W #$5668,A4
-         NEG.B $3242
-         NEG.W D2
-         MOVE.B #$85,D1
-         ADDI.L #30,D5
-         RTS
-         JSR $54
-         CMPI.W #3,D1
-         ORI.L  #3,D1
-         MOVEM.L A3-A4,-(SP)
-         MOVEM.L (SP)+,D1-A3
-         ADD.B D1,D2
-         ADD.B #10,D3
-         ADDA.W #23,A3
-         SUB.W D3,D5
-         SUBQ.B #8,D5
-         SUBQ.L #1,D5
-         LSR.B #3,D3
-         LSL.L #3,D4
-         LSL.W D1,D1
-         LSR.B D3,D7
-         LSR $3563
-         LSL $486412
-         ASR.W #3,D3
-         ASL.L #3,D4
-         ASL.L D1,D1
-         ASR.B D3,D7
-         ASR.W $3563
-         ASL.W $486412
-         ROR.L #3,D3
-         ROL.W #3,D4
-         ROL.B D1,D1
-         ROR D3,D7
-         ROR $3563
-         ROL $486412
-         MULS #$4562,D2
-         DIVS #$4562,D2
-         LEA leaEAmasks,A1
-         BCLR D1,D4
-         BCLR #20,D5
-         OR.B D1,D2
-         OR.B #10,D3
-         CMP.W D2,D5
-         CMP.L (A3),D4
-         EOR.W D2,D5
-         EOR.L D4,(A3)
-         MOVE.W #$5435,D6
-         MOVE.L #$463463,D3
-
+*.............................................................................
+* Debug Mode begin: Comment out when done
+*snippet:
+*         NOP
+*         BRA snippet
+*         BRA FarLabel
+*         BEQ snippet
+*         BGT NEG
+*         BSR snippet
+*         MOVEA.W #$5668,A4
+*         NEG.B $3242
+*         NEG.W D2
+*         MOVE.B #$85,D1
+*         ADDI.L #30,D5
+*         RTS
+*         JSR $54
+*         CMPI.W #3,D1
+*         ORI.L  #3,D1
+*         MOVEM.L A3-A4,-(SP)
+*         MOVEM.L (SP)+,D1-A3
+*         ADD.B D1,D2
+*         ADD.B #10,D3
+*         ADDA.W #23,A3
+*         SUB.W D3,D5
+*         SUBQ.B #8,D5
+*         SUBQ.L #1,D5
+*         LSR.B #3,D3
+*         LSL.L #3,D4
+*         LSL.W D1,D1
+*         LSR.B D3,D7
+*         LSR $3563
+*         LSL $486412
+*         ASR.W #3,D3
+*         ASL.L #3,D4
+*         ASL.L D1,D1
+*         ASR.B D3,D7
+*         ASR.W $3563
+*         ASL.W $486412
+*         ROR.L #3,D3
+*         ROL.W #3,D4
+*         ROL.B D1,D1
+*         ROR D3,D7
+*         ROR $3563
+*         ROL $486412
+*         MULS #$4562,D2
+*         DIVS #$4562,D2
+*         LEA leaEAmasks,A1
+*         BCLR D1,D4
+*         BCLR #20,D5
+*         OR.B D1,D2
+*         OR.B #10,D3
+*         CMP.W D2,D5
+*         CMP.L (A3),D4
+*         EOR.W D2,D5
+*         EOR.L D4,(A3)
+*         MOVE.W #$5435,D6
+*         MOVE.L #$463463,D3
+*snippetEnd:
+*         SIMHALT
+* Debug Mode end:   Comment out when done
+*.............................................................................
          
-snippetEnd:
-         SIMHALT
          
          
 eorEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,0
@@ -2923,8 +2954,12 @@ begin_address:
         MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
         TRAP        #15                 ;Perform task 2 (input)
         
-        CMP.B       #27,(A1)            ;Check for ESC entered
-        BEQ         address_Exit        ;Exit condition 
+        ;CMP.B       #27,(A1)            ;Check for ESC entered
+        ;BEQ         address_Exit        ;Exit condition
+        CMPI.B #'q',D1
+        BEQ address_Exit
+        CMPI.B #'Q',D1
+        BEQ address_Exit 
         
         BSR         enter_addr_edit_all
         CMP.W       #-1,D3              ;Did the edit pass?
@@ -2950,11 +2985,16 @@ end_address:
         MOVE.L      #14,D0              ;14 = Display the NULL terminated string at (A1) without CR, LF.
         TRAP        #15                 ;Perform task 14 (display)
         
+        LEA         endLocation,A1      ;Load address to store user input
         MOVE.B      #2,D0               ;2=Read string from keyboard and store at (A1), NULL (0) terminated, length returned in D1.W (max 80
         TRAP        #15                 ;Perform task 2 (input)
         
-        CMP.B       #27,(A1)            ;Check for ESC entered
-        BEQ         address_Exit        ;Exit condition 
+        ;CMP.B       #27,(A1)            ;Check for ESC entered
+        ;BEQ         address_Exit        ;Exit condition 
+        CMPI.B #'q',D1
+        BEQ address_Exit
+        CMPI.B #'Q',D1
+        BEQ address_Exit
         
         BSR         enter_addr_edit_all
         CMP.W       #-1,D3              ;Did the edit pass?
@@ -3658,8 +3698,8 @@ switchModeAndReg:
 
 
 ***initial user prompt stuff        
-slPrompt        DC.B    'Enter a starting address from $0 to $00FFFFFE: $',0
-elPrompt        DC.B    'Enter a ending address from $0 to $00FFFFFE: $',0
+slPrompt        DC.B    'Enter a starting address from $0 to $00FFFFFE, "Q" or "q" to quit: $',0
+elPrompt        DC.B    'Enter a ending address from $0 to $00FFFFFE, "Q" or "q" to quit: $',0
 
 invalidMsg      DC.B    ' Address entered is not within the specified range! Please try again',0
 invCharMsg      DC.B    ' A Character entered is not a valid address character! Please try again',0
@@ -3827,7 +3867,9 @@ minus           DC.B '-', 0
 lPrn            DC.B '(', 0
 rPrn            DC.B ')', 0
 
-continuePrompt  DC.B 'Enter "Q" or "q" to quit or any other key to continue: ',0
+
+nextAddrPrompt  DC.B 'Press "Q" or "q" to quit or any other key to enter a new starting address: ',0
+continuePrompt  DC.B 'Press "S" or "s" to stop or any other key to display the next page: ',0
 thankyoumessage DC.B 'Program Complete. Thank You!',0
 
 startLocation       DC.L    0
@@ -3859,6 +3901,7 @@ START:                  ; first instruction of program
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 *~Font name~Courier New~
 *~Font size~10~
