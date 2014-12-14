@@ -49,8 +49,8 @@ start:
         
 *.............................................................................
 * Debug Mode - Comment out when done
-        MOVE.L      #snippet,A3
-        MOVE.L      #snippetEnd,A4
+        ;MOVE.L      #snippet,A3
+        ;MOVE.L      #snippetEnd,A4
 
 *        MOVE.L      #begin,A3
 *        MOVE.L      #end,A4
@@ -203,65 +203,6 @@ checkContinue:
         MOVEM.W (SP)+,D1/D2/A1
         BRA screenLoop
 
-snippet:
-         NOP
-         BRA snippet
-         BRA FarLabel
-         BEQ snippet
-         BGT NEG
-         BSR snippet
-         MOVEA.W #$5668,A4
-         NEG.B $3242
-         NEG.W D2
-         MOVE.B #$85,D1
-         ADDI.L #30,D5
-         RTS
-         JSR $54
-         CMPI.W #3,D1
-         ORI.L  #3,D1
-         MOVEM.L A3-A4,-(SP)
-         MOVEM.L (SP)+,D1-A3
-         ADD.B D1,D2
-         ADD.B #10,D3
-         ADDA.W #23,A3
-         SUB.W D3,D5
-         SUBQ.B #8,D5
-         SUBQ.L #1,D5
-         LSR.B #3,D3
-         LSL.L #3,D4
-         LSL.W D1,D1
-         LSR.B D3,D7
-         LSR $3563
-         LSL $486412
-         ASR.W #3,D3
-         ASL.L #3,D4
-         ASL.L D1,D1
-         ASR.B D3,D7
-         ASR.W $3563
-         ASL.W $486412
-         ROR.L #3,D3
-         ROL.W #3,D4
-         ROL.B D1,D1
-         ROR D3,D7
-         ROR $3563
-         ROL $486412
-         MULS #$4562,D2
-         DIVS #$4562,D2
-         LEA leaEAmasks,A1
-         BCLR D1,D4
-         BCLR #20,D5
-         OR.B D1,D2
-         OR.B #10,D3
-         CMP.W D2,D5
-         CMP.L (A3),D4
-         EOR.W D2,D5
-         EOR.L D4,(A3)
-         MOVE.W #$5435,D6
-         MOVE.L #$463463,D3
-
-         
-snippetEnd:
-         SIMHALT
          
          
 eorEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,0
@@ -3859,6 +3800,7 @@ START:                  ; first instruction of program
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 *~Font name~Courier New~
 *~Font size~10~

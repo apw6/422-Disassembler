@@ -618,6 +618,7 @@ endLocation  DC.L    0
 *~Font size~12~
 *~Tab type~1~
 
+            END     START
 
 *~Font name~Courier New~
 *~Font size~10~
