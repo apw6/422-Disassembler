@@ -3004,6 +3004,11 @@ end_address:
         BSR         enter_addr_edit_all
         CMP.W       #-1,D3              ;Did the edit pass?
         BEQ         end_address         ;No, loop and ask for correct input
+        
+        BSR         enter_addr_edit_to  ;Test for to address less than from address
+        CMP.W       #-1,D3              ;Did the edit pass?
+        BEQ         end_address         ;No, loop and ask for correct input
+
 
         MOVEA.L     D3,A4               ;Ending address gets stored in A4
         BRA         address_done
@@ -3125,7 +3130,6 @@ ck_size_error:
         TRAP        #15                 ;Display the error message
         MOVE.L      #-1,D3              ;Load -1 into return parameter
         RTS                             ;Return        
-
 
 *==============================================================================
 * parseHexString - Converts user input string into a valid memory address
@@ -3298,7 +3302,43 @@ ck_addr_range_error
 ck_addr_done:
 
         RTS                             ;Return
+        
+*------------------------------------------------------------------------------
+* enter_addr_edit_to -  Test for to date coming before a from date
+*                    - Return error condition
+*------------------------------------------------------------------------------
 
+enter_addr_edit_to
+
+        ;MOVE.L      (A3),D6             * Load starting address
+        
+        MOVEA.L     D3,A6               ;Ending address gets stored in A6 for compare
+        CMPA.L      A3,A6               * Is input at or above minimum?
+        BLT         enter_addr_edit_to_error 
+        
+
+enter_addr_edit_to_return
+
+        RTS
+        
+*------------------------------------------------------------------------------
+* enter_addr_edit_to_error - To address can not be before from address
+*                          - Load error message and display it
+*                          - Return error condition
+*------------------------------------------------------------------------------
+        
+enter_addr_edit_to_error:
+
+        LEA         to_from_err,A1      ;Load to address error message into A1
+        MOVE.L      #80,D1              ;Load to address error length to D1
+        
+        MOVE.L      #0,D0               ;Display n characters of string at (A1), 
+                                        ; n is D1.W with CR, LF. 
+        TRAP #15                        ;Display the error message
+        MOVE.L #-1,D3                   ;Load -1 into return parameter
+        RTS                             ;Return
+        
+ 
 *******************************************************************************
 *                          OP CODE ROLE ROUTINES
 *******************************************************************************
@@ -3709,7 +3749,8 @@ elPrompt        DC.B    'Enter a ending address from $0 to $00FFFFFE, "Q" or "q"
 invalidMsg      DC.B    ' Address entered is not within the specified range! Please try again',0
 invCharMsg      DC.B    ' A Character entered is not a valid address character! Please try again',0
 
-even_msg        DC.B    ' You must enter an even address!'
+even_msg        DC.B    ' You must enter an even address!',0
+to_from_err     DC.B    ' To address must cannot come before the from address!',0
 
 spc             DC.B    ' '
 spc_len         DC.B    spc_len-spc
@@ -3906,6 +3947,7 @@ START:                  ; first instruction of program
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
