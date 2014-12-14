@@ -1,27 +1,23 @@
 
-*##########################################################################
+*#################################################################################################
 * Title      : 
 * Written by : Andrew Watson
 *            : Elaine Keller
 *            : Robert Anderson
 * Date       : 11/14/2014
 * Description: 
-*##########################################################################
+*#################################################################################################
 
-***Possible Bug***
-*can not tell data from an
-*unidentified instruction that is an actual
-*instruction therefore causing errors.
-*may not actually be a bug because data
-*is data to the machine, and if you modify
-*the instructions in memory for a program
-*by moivng data, you can modify the instuctions
-*executed.
+**************************************************************************************************
+*  Assumptions: Can not tell data from an unidentified instruction that is an actual 
+*               instruction therefore causing errors. It may not actually be a bug because 
+*               data is data to the machine, and if you modify the instructions in memory for a 
+*               program by moivng data, you can modify the instuctions executed.
+**************************************************************************************************
 
-
-***************************************************************************
-*                   Variable/Data Definitions
-***************************************************************************
+**************************************************************************************************
+*                                    Variable/Data Definitions
+**************************************************************************************************
 
 stack   EQU   $00005000
 begin   EQU   $00000000
@@ -31,33 +27,22 @@ word    EQU   2
 long    EQU   4
 prgorg  EQU   $1000
 
-    ORG $00000FFE
+        ORG         $00000FFE
 FarLabel:
-    ORG    prgorg
+        ORG         prgorg
 start:
-        LEA stack, SP                   ;initialize stack
+        LEA         stack, SP           ;initialize stack
 
-    ORG    prgorg
+        ORG         prgorg
 
-******************************************************************************
-*                   Begin processing active code
-******************************************************************************
+**************************************************************************************************
+*                                   Begin processing active code
+**************************************************************************************************
+
     
 start:
 
         LEA         stack, SP           ;Initialize stack
-        
-*.............................................................................
-* Debug Mode - Comment out when done
-*        MOVE.L      #snippet,A3
-*        MOVE.L      #snippetEnd,A4
-*        MOVE.L      #begin,A3
-*        MOVE.L      #end,A4
-*        MOVE.L      #$00004000,A3
-*        MOVE.L      #$00005000,A4
-*        BRA         screenLoop
-* Debug Mode - Comment out when done
-*.............................................................................        
         
 prompt_user:
 
@@ -66,63 +51,59 @@ prompt_user:
         BEQ         fin                 ;Yes, then exit
         
         BRA         screenLoop
-        ;BSR         process_op_codes
-        BRA         prompt_user
-                
-******************************************************************************
-*                   Begin processing OP Codes
-******************************************************************************
+                        
+**************************************************************************************************
+*                                  Begin processing OP Codes
+**************************************************************************************************
+
 
 screenLoop:
 
-        MOVE.B #30,D2
+        MOVE.B      #30,D2
  
 main_Loop:
 
-        CMPA.L A3,A4                    ;check end of prog
-        BLE fin
+        CMPA.L      A3,A4               ;check end of prog
+        BLE         fin
         
-        CMPI.B #0,D2
-        BEQ checkContinue
-        SUBQ.B #1,D2
-        MOVEM.W D2,-(SP)                ;save D2 for next iteration
+        CMPI.B      #0,D2
+        BEQ         checkContinue
+        SUBQ.B      #1,D2
+        MOVEM.W     D2,-(SP)            ;save D2 for next iteration
         
         ;print memory location
-        MOVEM.L D3/D6,-(SP)
-        MOVEQ.L #2,D6                   ;set as long hex string
-        MOVE.L  A3,D3                   ;put hex in D3
-        BSR outputHex
-        MOVEM.L (SP)+,D3/D6
+        MOVEM.L     D3/D6,-(SP)
+        MOVEQ.L     #2,D6               ;set as long hex string
+        MOVE.L      A3,D3               ;put hex in D3
+        BSR         outputHex
+        MOVEM.L     (SP)+,D3/D6
         
         ;print ' '
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #' ',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
-        
-        
-        
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #' ',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
+                
         ;handle an odd memory access(instructions will never be misaligned)
-        MOVE.L A3,D2                    ; copy address to D2
-        ANDI.B #%00000001,D2            ;mask everything except the least significant bit
-        CMPI.B #1,D2                    ;compare the least sig bit of the address to one
-        BEQ handlebytedata              ;the least sig bit will only be one if the insrtuction
-                           ;is odd(misaligned) and therefore not an instruction
+        MOVE.L      A3,D2               ;copy address to D2
+        ANDI.B      #%00000001,D2       ;mask everything except the least significant bit
+        CMPI.B      #1,D2               ;compare the least sig bit of the address to one
+        BEQ         handlebytedata      ;the least sig bit will only be one if the insrtuction
+                                        ;is odd(misaligned) and therefore not an instruction
+        MOVEQ.L     #0,D3
         
-        MOVEQ.L #0,D3
-        
-        MOVE.W (A3),D1                  ;copy word from other prog to analyze as instructioninstruction
+        MOVE.W      (A3),D1             ;copy word from other prog to analyze as instructioninstruction
         
         ***things to save A3,A4,D1(?)***
-        MOVEM.L A3-A4,-(SP)
-        BSR checkOPcode
-        MOVEM.L (SP)+,A3-A4
-        ADDA.L  D7,A3                   ;look past data that was part of the instruction
+        MOVEM.L     A3-A4,-(SP)
+        BSR         checkOPcode
+        MOVEM.L     (SP)+,A3-A4
+        ADDA.L      D7,A3               ;look past data that was part of the instruction
         
-        ADDQ.L  #word,A3
-        MOVEM.W (SP)+,D2                ;restore D2 for next iteration
-        BRA     main_Loop 
+        ADDQ.L      #word,A3
+        MOVEM.W     (SP)+,D2            ;restore D2 for next iteration
+        BRA         main_Loop 
         
 checkOPcode:
 
@@ -3926,27 +3907,11 @@ endLocation         DC.L    0
     END    START                        ; last line of source
 
 
-*-----------------------------------------------------------
-* Title      :
-* Written by :
-* Date       :
-* Description:
-*-----------------------------------------------------------
-    ORG    $1000
-START:                  ; first instruction of program
-
-* Put program code here
-
-    SIMHALT                             ; halt simulator
-
-* Put variables and constants here
-
-    END    START                        ; last line of source
-
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
