@@ -2955,10 +2955,13 @@ begin_address:
         
         ;CMP.B       #27,(A1)            ;Check for ESC entered
         ;BEQ         address_Exit        ;Exit condition
-        CMPI.B #'q',D1
-        BEQ address_Exit
-        CMPI.B #'Q',D1
-        BEQ address_Exit 
+                
+        CMP.B       #113,(A1)            ;Check for 'q' entered
+        BEQ         address_Exit
+        
+        
+        CMP.B       #81,(A1)            ;Check for 'Q' entered
+        BEQ         address_Exit 
         
         BSR         enter_addr_edit_all
         CMP.W       #-1,D3              ;Did the edit pass?
@@ -2990,10 +2993,13 @@ end_address:
         
         ;CMP.B       #27,(A1)            ;Check for ESC entered
         ;BEQ         address_Exit        ;Exit condition 
-        CMPI.B #'q',D1
-        BEQ address_Exit
-        CMPI.B #'Q',D1
-        BEQ address_Exit
+                
+        CMP.B       #113,(A1)            ;Check for 'q' entered
+        BEQ         address_Exit
+               
+        CMP.B       #81,(A1)            ;Check for 'Q' entered
+        BEQ         address_Exit 
+        
         
         BSR         enter_addr_edit_all
         CMP.W       #-1,D3              ;Did the edit pass?
@@ -3900,6 +3906,7 @@ START:                  ; first instruction of program
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
