@@ -339,313 +339,308 @@ CMP:
         
 validCmpEA:
         
-        LEA moveSourceEAmasks,A1        ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         moveSourceEAmasks,A1 ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA moveSourceEA,A1             ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  cmpBody                    ;if its match, its a valid mode and we can procede
+        LEA         moveSourceEA,A1     ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         cmpBody             ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validCmpEA                  ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validCmpEA          ;check for next mode
         
         
         
 cmpBody
 
-        LEA     cmpMessage,A1           ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string with CR, LF
-        TRAP    #15
+        LEA         cmpMessage,A1       ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string with CR, LF
+        TRAP        #15
         
-        BSR negSize
+        BSR         negSize
         
         ;do EA
-        
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;Then do Dn
         
-        MOVE.W  D1,D2
-        LSR.W   #8,D2                   ;move reg into first byte
-        LSR.B   #1,D2                   ;line it up to least sig bit
-        AND.B   #%00000111,D2           ;force mode to Dn
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2
+        LSR.W       #8,D2               ;move reg into first byte
+        LSR.B       #1,D2               ;line it up to least sig bit
+        AND.B       #%00000111,D2       ;force mode to Dn
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
-
+**************************************************************************************************
+*                                       Tests for OP Code OR     
+**************************************************************************************************
 
 orSourceEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,%111100,0
 orSourceEAmasks DC.B %111000,%111000,%111000,%111000,%111111,%111111,%111111,0
 
 OR:
         
-
-        
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
         ;Figure out if EA is source or destination
-        MOVE.W D1,D2                    ;copy inst to D2
-        LSR.W  #6,D2                    ;shift opmode to least sig bit of least sig byte
-        ANDI.B #%00000111,D2            ;mask out rest of byte
-        CMPI.B #2,D2                    ;compare to 2
-        BLE validOrSourceEA             ;2 or less is EA is source
+        MOVE.W      D1,D2               ;copy inst to D2
+        LSR.W       #6,D2               ;shift opmode to least sig bit of least sig byte
+        ANDI.B      #%00000111,D2       ;mask out rest of byte
+        CMPI.B      #2,D2               ;compare to 2
+        BLE         validOrSourceEA     ;2 or less is EA is source
         
-        CMPI.B #%111,D2                 ;compare to 7
-        BEQ falsePositive               ;thats not valid
-        CMPI.B #%11,D2                  ;compare to 3
-        BEQ falsePositive               ;also not valid
-        BRA validOrDestEA               ;all thats left is valid EA as Dest 
+        CMPI.B      #%111,D2            ;compare to 7
+        BEQ         falsePositive       ;thats not valid
+        CMPI.B      #%11,D2             ;compare to 3
+        BEQ         falsePositive       ;also not valid
+        BRA         validOrDestEA       ;all thats left is valid EA as Dest 
         
 validORSourceEA:
         
-        LEA orSourceEAmasks,A1          ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         orSourceEAmasks,A1  ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA orSourceEA,A1               ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  orSource                   ;if its match, its a valid mode and we can procede
+        LEA         orSourceEA,A1       ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         orSource            ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validOrSourceEA             ;check for next mode
-        
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validOrSourceEA     ;check for next mode
         
 validOrDestEA:
         
-        LEA addDestEAmasks,A1           ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         addDestEAmasks,A1   ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.W D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.W      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA addDestEA,A1                ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ orDest                      ;if its match, its a valid mode and we can procede
+        LEA         addDestEA,A1        ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         orDest              ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validOrDestEA               ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validOrDestEA       ;check for next mode
         
 orSource
 
-        LEA     orMessage,A1            ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string with CR, LF
-        TRAP    #15
-        
-        BSR negSize
+        LEA         orMessage,A1        ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string with CR, LF
+        TRAP        #15
+            
+        BSR         negSize
         
         ;do EA
-        
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;Then do Dn
+        MOVE.W      D1,D2
+        LSR.W       #8,D2               ;move reg into first byte
+        LSR.B       #1,D2               ;line it up to least sig bit
+        AND.B       #%00000111,D2       ;force mode to Dn
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        MOVE.W  D1,D2
-        LSR.W   #8,D2                   ;move reg into first byte
-        LSR.B   #1,D2                   ;line it up to least sig bit
-        AND.B   #%00000111,D2           ;force mode to Dn
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
-        
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
 orDest
 
-        LEA     orMessage,A1            ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string with CR, LF
-        TRAP    #15
+        LEA         orMessage,A1        ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string with CR, LF
+        TRAP        #15
         
-        BSR negSize
+        BSR         negSize
         
         ;Do Dn
-        
-        MOVE.W  D1,D2
-        LSR.W   #8,D2                   ;move reg into first byte
-        LSR.B   #1,D2                   ;line it up to least sig bit
-        AND.B   #%00000111,D2           ;force mode to Dn
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2
+        LSR.W       #8,D2               ;move reg into first byte
+        LSR.B       #1,D2               ;line it up to least sig bit
+        AND.B       #%00000111,D2       ;force mode to Dn
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
         
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;Then do EA
         
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
-
-
+**************************************************************************************************
+*                                       Tests for OP Code BCLRDATA     
+**************************************************************************************************
 
 BCLRDATA:
 
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
 validBCLRdataModes:
         
-        LEA mulsEAmasks,A1              ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         mulsEAmasks,A1      ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA mulsEA,A1                   ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  bclrdataBody               ;if its match, its a valid mode and we can procede
+        LEA         mulsEA,A1           ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         bclrdataBody        ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validBCLRdataModes          ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validBCLRdataModes  ;check for next mode
         
 bclrdataBody:
-        
 
-
-        LEA     bclrMessage,A1          ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
-
-        MOVEM.L D0/D1/A3,-(SP)          ;save D1 and A3
-        ADDQ.L #word,D7                 ;signal there is a word following this instruction
+        LEA         bclrMessage,A1      ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
+    
+        MOVEM.L     D0/D1/A3,-(SP)      ;save D1 and A3
+        ADDQ.L      #word,D7            ;signal there is a word following this instruction
         
         ;print '#'
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #'#',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #'#',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;get following word
-        ADDQ.L #word,A3
-        MOVE.W (A3),D1                  ;move word at (A3)
-        ANDI.L #$0000FFFF,D1            ;clear unimportant bit of D1
+        ADDQ.L      #word,A3
+        MOVE.W      (A3),D1             ;move word at (A3)
+        ANDI.L      #$0000FFFF,D1       ;clear unimportant bit of D1
         
         ;print number
-        MOVE.B #3,D0
-        TRAP #15
+        MOVE.B      #3,D0
+        TRAP        #15
         
-        MOVEM.L (SP)+,D0/D1/A3          ;restore D1 and A3
+        MOVEM.L     (SP)+,D0/D1/A3      ;restore D1 and A3
 
 
 
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;do dest EA
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
-
-
+**************************************************************************************************
+*                                       Tests for OP Code BCLR     
+**************************************************************************************************
          
 BCLR:
 
@@ -3866,6 +3861,7 @@ endLocation         DC.L    0
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
