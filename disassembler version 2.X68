@@ -644,71 +644,72 @@ bclrdataBody:
          
 BCLR:
 
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
 validBCLRModes:
         
-        LEA mulsEAmasks,A1              ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         mulsEAmasks,A1      ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA mulsEA,A1                   ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  bclrBody                   ;if its match, its a valid mode and we can procede
+        LEA         mulsEA,A1           ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         bclrBody            ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validBCLRModes              ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validBCLRModes      ;check for next mode
         
 bclrBody:
-        
 
-
-        LEA     bclrMessage,A1          ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         bclrMessage,A1      ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
         ;do source EA
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
 
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;do dest data reg
-        MOVE.W  D1,D2                   ;check mode
-        LSR.W #8,D2                     ;shift reg over
-        LSR.B #1,D2
-        AND.B   #%00000111,D2           ;force recognition as a Dn
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        LSR.W       #8,D2               ;shift reg over
+        LSR.B       #1,D2
+        AND.B       #%00000111,D2       ;force recognition as a Dn
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
+**************************************************************************************************
+*                                       Tests for OP Code LEA     
+**************************************************************************************************
          
 
 leaEA        DC.B %010000,%111000,%111001,0
@@ -716,227 +717,225 @@ leaEAmasks   DC.B %111000,%111111,%111111,0
         
 LEA:
 
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
 validLeaModes:
         
-        LEA leaEAmasks,A1               ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         leaEAmasks,A1       ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA leaEA,A1                    ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  leaBody                    ;if its match, its a valid mode and we can procede
+        LEA         leaEA,A1            ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         leaBody             ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validLeaModes               ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validLeaModes       ;check for next mode
         
 leaBody:
-        
 
-
-        LEA     leaMessage,A1           ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         leaMessage,A1       ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
         ;do source EA
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
 
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;do dest addr reg
-        MOVE.W  D1,D2                   ;check mode
-        LSR.W #8,D2                     ;shift reg over
-        LSR.B #1,D2
-        AND.B   #%00000111,D2           ;force recognition as a An
-        ADDQ.B #%1000,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        LSR.W       #8,D2               ;shift reg over
+        LSR.B       #1,D2
+        AND.B       #%00000111,D2       ;force recognition as a An
+        ADDQ.B      #%1000,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
+**************************************************************************************************
+*                                       Tests for OP Code DIVS     
+**************************************************************************************************
 
 
 DIVS:
 
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
 validDivsModes:
         
-        LEA mulsEAmasks,A1              ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         mulsEAmasks,A1      ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA mulsEA,A1                   ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  divsBody                   ;if its match, its a valid mode and we can procede
+        LEA         mulsEA,A1           ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         divsBody            ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validDivsModes              ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validDivsModes      ;check for next mode
         
 divsBody:
-        
 
-
-        LEA     divsMessage,A1          ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         divsMessage,A1      ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
         
         ;set size to word
-        MOVEQ.L #1,D6
-        BSR printSize
+        MOVEQ.L     #1,D6
+        BSR         printSize
         
         ;do source EA
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
 
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;do dest data reg
-        MOVE.W  D1,D2                   ;check mode
-        LSR.W #8,D2                     ;shift reg over
-        LSR.B #1,D2
-        AND.B   #%00000111,D2           ;force recognition as a Dn
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        LSR.W       #8,D2               ;shift reg over
+        LSR.B       #1,D2
+        AND.B       #%00000111,D2       ;force recognition as a Dn
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
-
-
+**************************************************************************************************
+*                                       Tests for OP Code MULS     
+**************************************************************************************************
 
 mulsEA        DC.B %000000,%010000,%011000,%100000,%111000,%111001,%111100,0
 mulsEAmasks   DC.B %111000,%111000,%111000,%111000,%111111,%111111,%111111,0
         
 MULS:
 
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
 validMulsModes:
         
-        LEA mulsEAmasks,A1              ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         mulsEAmasks,A1      ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA mulsEA,A1                   ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  mulsBody                   ;if its match, its a valid mode and we can procede
+        LEA         mulsEA,A1           ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         mulsBody            ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validMulsModes              ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validMulsModes      ;check for next mode
         
 mulsBody:
-        
 
-
-        LEA     mulsMessage,A1          ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         mulsMessage,A1      ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
         
         ;set size to word
-        MOVEQ.L #1,D6
-        BSR printSize
+        MOVEQ.L     #1,D6
+        BSR         printSize
 
         ;do source EA
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
 
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;do dest data reg
-        MOVE.W  D1,D2                   ;check mode
-        LSR.W #8,D2                     ;shift reg over
-        LSR.B #1,D2
-        AND.B   #%00000111,D2           ;force recognition as a Dn
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2               ;check mode
+        LSR.W       #8,D2               ;shift reg over
+        LSR.B       #1,D2
+        AND.B       #%00000111,D2       ;force recognition as a Dn
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
-
+**************************************************************************************************
+*                                       Tests for OP Code RSRLWEA     
+**************************************************************************************************
 
 RSRLWEA:
-        
-
         
         MOVEQ.L #0, D0                  ;clear D0
         
@@ -3861,6 +3860,7 @@ endLocation         DC.L    0
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
