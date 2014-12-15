@@ -232,176 +232,110 @@ checkNextAddr:
         TRAP        #15
         
         BRA         prompt_user
-
-*.............................................................................
-* Debug Mode begin: Comment out when done
-*snippet:
-*         NOP
-*         BRA snippet
-*         BRA FarLabel
-*         BEQ snippet
-*         BGT NEG
-*         BSR snippet
-*         MOVEA.W #$5668,A4
-*         NEG.B $3242
-*         NEG.W D2
-*         MOVE.B #$85,D1
-*         ADDI.L #30,D5
-*         RTS
-*         JSR $54
-*         CMPI.W #3,D1
-*         ORI.L  #3,D1
-*         MOVEM.L A3-A4,-(SP)
-*         MOVEM.L (SP)+,D1-A3
-*         ADD.B D1,D2
-*         ADD.B #10,D3
-*         ADDA.W #23,A3
-*         SUB.W D3,D5
-*         SUBQ.B #8,D5
-*         SUBQ.L #1,D5
-*         LSR.B #3,D3
-*         LSL.L #3,D4
-*         LSL.W D1,D1
-*         LSR.B D3,D7
-*         LSR $3563
-*         LSL $486412
-*         ASR.W #3,D3
-*         ASL.L #3,D4
-*         ASL.L D1,D1
-*         ASR.B D3,D7
-*         ASR.W $3563
-*         ASL.W $486412
-*         ROR.L #3,D3
-*         ROL.W #3,D4
-*         ROL.B D1,D1
-*         ROR D3,D7
-*         ROR $3563
-*         ROL $486412
-*         MULS #$4562,D2
-*         DIVS #$4562,D2
-*         LEA leaEAmasks,A1
-*         BCLR D1,D4
-*         BCLR #20,D5
-*         OR.B D1,D2
-*         OR.B #10,D3
-*         CMP.W D2,D5
-*         CMP.L (A3),D4
-*         EOR.W D2,D5
-*         EOR.L D4,(A3)
-*         MOVE.W #$5435,D6
-*         MOVE.L #$463463,D3
-*snippetEnd:
-*         SIMHALT
-* Debug Mode end:   Comment out when done
-*.............................................................................
-         
+        
+**************************************************************************************************
+*                                       Tests for OP Code EOR     
+**************************************************************************************************
          
 eorEA      Dc.B %000000,%010000,%011000,%100000,%111000,%111001,0
 eorEAmasks DC.B %111000,%111000,%111000,%111000,%111111,%111111,0
 
-
-
 EOR:
         
-
-        
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
         ;Figure out if EA is source or destination
-        MOVE.W D1,D2                    ;copy inst to D2
-        LSR.W  #6,D2                    ;shift opmode to least sig bit of least sig byte
-        ANDI.B #%00000111,D2            ;mask out rest of byte
-        CMPI.B #3,D2                    ;compare to 3
-        BLE falsePositive               ;3 or less is not valid
+        MOVE.W      D1,D2               ;copy inst to D2
+        LSR.W       #6,D2               ;shift opmode to least sig bit of least sig byte
+        ANDI.B      #%00000111,D2       ;mask out rest of byte
+        CMPI.B      #3,D2               ;compare to 3
+        BLE         falsePositive       ;3 or less is not valid
         
-        CMPI.B #%111,D2                 ;compare to 7
-        BEQ falsePositive               ;thats not valid
-        BRA validEorEA                  ;all thats left is valid EA size 
+        CMPI.B      #%111,D2            ;compare to 7
+        BEQ         falsePositive       ;thats not valid
+        BRA         validEorEA          ;all thats left is valid EA size 
         
 validEorEA:
         
-        LEA eorEAmasks,A1               ;load the list of masks
-        ADDA.L D0,A1                    ;displace to a specific mask
-        MOVE.B (A1),D5                  ;move the mask to D5
+        LEA         eorEAmasks,A1       ;load the list of masks
+        ADDA.L      D0,A1               ;displace to a specific mask
+        MOVE.B      (A1),D5             ;move the mask to D5
         
-        CMPI.B #0,D5                    ;check if the mask is 0
-        BEQ falsePositive               ;branch if it is
+        CMPI.B      #0,D5               ;check if the mask is 0
+        BEQ         falsePositive       ;branch if it is
         
-        MOVE.B D1,D2                    ;copy instruction to D2
-        AND.B D5,D2                     ;mask D2
+        MOVE.B      D1,D2               ;copy instruction to D2
+        AND.B       D5,D2               ;mask D2
         
-        LEA eorEA,A1                    ;load the list of valid modes
-        ADDA.L D0,A1                    ;displace to a specific mode
-        MOVE.B (A1),D4                  ;move mode to D4
-        CMP.B D4,D2                     ;compare mode to masked value
-        BEQ  eorBody                    ;if its match, its a valid mode and we can procede
+        LEA         eorEA,A1            ;load the list of valid modes
+        ADDA.L      D0,A1               ;displace to a specific mode
+        MOVE.B      (A1),D4             ;move mode to D4
+        CMP.B       D4,D2               ;compare mode to masked value
+        BEQ         eorBody             ;if its match, its a valid mode and we can procede
         
-        ADDQ.L #1,D0                    ;add one to displacement
-        BRA validEorEA                  ;check for next mode
+        ADDQ.L      #1,D0               ;add one to displacement
+        BRA         validEorEA          ;check for next mode
                 
 
 eorBody
 
-        LEA     eorMessage,A1           ;move string for MOVE
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string with CR, LF
-        TRAP    #15
-        
-        BSR negSize
+        LEA         eorMessage,A1       ;move string for MOVE
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string with CR, LF
+        TRAP        #15
+        BSR         negSize
         
         ;Do Dn
-        
-        MOVE.W  D1,D2
-        LSR.W   #8,D2                   ;move reg into first byte
-        LSR.B   #1,D2                   ;line it up to least sig bit
-        AND.B   #%00000111,D2           ;force mode to Dn
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
+        MOVE.W      D1,D2
+        LSR.W       #8,D2               ;move reg into first byte
+        LSR.B       #1,D2               ;line it up to least sig bit
+        AND.B       #%00000111,D2       ;force mode to Dn
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
         
         ;print ','
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #',',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;prin char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #',',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;prin char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
         ;Then do EA
+        MOVE.W      D1,D2               ;check mode
+        AND.B       #%00111111,D2
+        MOVE.B      D2,D5
+        MOVEM.L     D1,-(SP)
+        BSR         Get_Effective_Address
+        MOVEM.L     (SP)+,D1
         
-        MOVE.W  D1,D2                   ;check mode
-        AND.B   #%00111111,D2
-        MOVE.B  D2,D5
-        MOVEM.L D1,-(SP)
-        BSR     Get_Effective_Address
-        MOVEM.L (SP)+,D1
         
-        
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
 
-        MOVEQ.L #0,D0
+        MOVEQ.L     #0,D0
         RTS
 
-
+**************************************************************************************************
+*                                       Tests for OP Code CMP     
+**************************************************************************************************
 
 CMP:
         
-
-        
-        MOVEQ.L #0, D0                  ;clear D0
+        MOVEQ.L     #0, D0              ;clear D0
         
         ;Figure out if EA is source or destination
-        MOVE.W D1,D2                    ;copy inst to D2
-        LSR.W  #6,D2                    ;shift opmode to least sig bit of least sig byte
-        ANDI.B #%00000111,D2            ;mask out rest of byte
-        CMPI.B #2,D2                    ;compare to 2
-        BLE validCmpEA                  ;2 or less is EA 
+        MOVE.W      D1,D2               ;copy inst to D2
+        LSR.W       #6,D2               ;shift opmode to least sig bit of least sig byte
+        ANDI.B      #%00000111,D2       ;mask out rest of byte
+        CMPI.B      #2,D2               ;compare to 2
+        BLE         validCmpEA          ;2 or less is EA 
         
-        BRA falsePositive               ;thats not valid
+        BRA         falsePositive       ;thats not valid
         
 validCmpEA:
         
@@ -3932,6 +3866,7 @@ endLocation         DC.L    0
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
