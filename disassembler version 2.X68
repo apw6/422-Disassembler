@@ -64,8 +64,7 @@ screenLoop:
 main_Loop:
 
         CMPA.L      A3,A4               ;check end of prog
-        BLE         fin
-        
+        BLE         checkNextAddr
         CMPI.B      #0,D2
         BEQ         checkContinue
         SUBQ.B      #1,D2
@@ -104,49 +103,60 @@ main_Loop:
         ADDQ.L      #word,A3
         MOVEM.W     (SP)+,D2            ;restore D2 for next iteration
         BRA         main_Loop 
+
+*=================================================================================================
+*                                  Search for a valid OP Code
+*=================================================================================================
         
 checkOPcode:
 
 
-        MOVEQ.L #0,D7
+        MOVEQ.L     #0,D7
         
-        LEA     instOPList,A0           ;get instruction signitrue list in A0
-        ADDA.L  D3,A0                   ;get correct sig         
+        LEA         instOPList,A0       ;get instruction signitrue list in A0
+        ADDA.L      D3,A0               ;get correct sig         
         
-        LEA     instMaskList,A1         ;get instruction mask in A1
-        ADDA.L  D3,A1                   ;get correct mast
+        LEA         instMaskList,A1     ;get instruction mask in A1
+        ADDA.L      D3,A1               ;get correct mast
         
-        MOVE.W  D1,D2                   ;move instruction into D2 for manipulaiton
+        MOVE.W      D1,D2               ;move instruction into D2 for manipulaiton
         
-        AND.W   (A1),D2                 ;mask instruction
-        
-        
+        AND.W       (A1),D2             ;mask instruction
         
         
-        CMP.W   (A0),D2                 ;compare to sig
-        BEQ     match                   ;if sig matches branch
-        ADDQ.L  #word,D3                ;add to D3 to check for next instruction
-        BRA checkOPcode
+        
+        
+        CMP.W       (A0),D2             ;compare to sig
+        BEQ         match               ;if sig matches branch
+        ADDQ.L      #word,D3            ;add to D3 to check for next instruction
+        BRA         checkOPcode
         
 falsePositive:
         
-        MOVE.B #-1,D0
+        MOVE.B      #-1,D0
         RTS
+
+*-------------------------------------------------------------------------------------------------
+*                      Load instructions from list and jump to that op code
+*-------------------------------------------------------------------------------------------------
 
 match:
         
-        LEA     instLabelList,A1        ;get instruction code label
-        ADDA.L  D3,A1                   ;get correct label
-        ADDA.L  D3,A1
-        ADDQ.L  #word,D3                ;add to D3 incase false positive
-        MOVEA.L (A1),A1
-        MOVEM.L D3,-(SP)                ; save D3
-        JSR     (A1)
-        MOVEM.L (SP)+,D3                ;restore D3
-        CMP.B   #-1,D0
-        BEQ     checkOPcode
+        LEA         instLabelList,A1    ;get instruction code label
+        ADDA.L      D3,A1               ;get correct label
+        ADDA.L      D3,A1
+        ADDQ.L      #word,D3            ;add to D3 incase false positive
+        MOVEA.L     (A1),A1
+        MOVEM.L     D3,-(SP)            ;save D3
+        JSR         (A1)
+        MOVEM.L     (SP)+,D3            ;restore D3
+        CMP.B       #-1,D0
+        BEQ         checkOPcode
         RTS
-        
+
+*.................................................................................................
+*                          List Variables for OP Code instructions
+*.................................................................................................
 
 instOPList  DC.W moveaInstruction,eorInstruction
 instOPList2 DC.W cmpInstruction,orInstruction,bclrdataInstruction,bclrInstruction,leaInstruction,divsInstruction,mulsInstruction,rsrlweaInstruction,rsrlregInstruction,asrlweaInstruction,asrlregInstruction,lsrlweaInstruction,lsrlregInstruction
@@ -158,59 +168,70 @@ instLabelList  DC.L MOVEA,EOR
 instLabelList2 DC.L CMP,OR,BCLRDATA,BCLR,LEA,DIVS,MULS,RSRLWEA,RSRLREG,ASRLWEA,ASRLREG,LSRLWEA,LSRLREG
 instLabelList3 DC.L SUBQ,SUB,ADDA,ADD,MOVEM,ADDI,ORI,CMPI,JSR,RTS,NEG,NOP, MOVE,Bcc,unknownOpCode
 
+
+*=================================================================================================
+*    Check for the user wanting to continue / stop displaying another page of the output
+*=================================================================================================
+
 checkContinue:
         
-        MOVEM.W D1/D2/A1,-(SP)          ;save reg that are modified just in case
+        MOVEM.W     D1/D2/A1,-(SP)      ;save reg that are modified just in case
         
-        LEA     continuePrompt,A1       ;move string
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         continuePrompt,A1   ;move string
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
         
         
-        MOVE.B  #5,D0                   ;set for task to read single char into D1
-        TRAP    #15
+        MOVE.B      #5,D0               ;set for task to read single char into D1
+        TRAP        #15
         
-        LEA     clearLine,A1            ;move string for a CR and LF
-        MOVE.B  #14,D0                  ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
         
-        ;if either case of 'Q' is entered, quit the program
-        CMPI.B #'s',D1
-        BEQ checkNextAddr
-        CMPI.B #'S',D1
-        BEQ checkNextAddr
+        ;if either case of 'S' is entered, stop displaying the output
+        CMPI.B      #'s',D1             ;has the user selected 'S' to stop
+        BEQ         checkNextAddr       ;yes, check if user wants to stop, or display more lines
+        CMPI.B      #'S',D1
+        BEQ         checkNextAddr
         
-        MOVEM.W (SP)+,D1/D2/A1
-        BRA screenLoop
+        MOVEM.W     (SP)+,D1/D2/A1
+        BRA         screenLoop
+
+*-------------------------------------------------------------------------------------------------
+*            Check for the user wants to enter another address to check, or quit
+*-------------------------------------------------------------------------------------------------
 
 checkNextAddr:
 
-        LEA     nextAddrPrompt,A1  ;move string
-        MOVE.B  #14,D0        ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         nextAddrPrompt,A1   ;move string
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
         
         
-        MOVE.B  #5,D0         ;set for task to read single char into D1
-        TRAP    #15
+        MOVE.B      #5,D0               ;set for task to read single char into D1
+        TRAP        #15
         
-        LEA     clearLine,A1  ;move string for a CR and LF
-        MOVE.B  #14,D0        ;set for task to display null terminated 
-                              ;string without CR, LF
-        TRAP    #15
+        LEA         clearLine,A1        ;move string for a CR and LF
+        MOVE.B      #14,D0              ;set for task to display null terminated 
+                                        ;string without CR, LF
+        TRAP        #15
         
-        CMPI.B #'q',D1
-        BEQ fin
-        CMPI.B #'Q',D1
-        BEQ fin
+        ;if either case of 'Q' is entered, quit the program
+        CMPI.B      #'q',D1             ;has the user selected 'Q' to quit
+        BEQ         fin                 ;yes, check if user wants to quit, or check new address
+        CMPI.B      #'Q',D1
+        BEQ         fin
         
-        MOVE.W  #$FF00, D1     ;Clear screen value
-        MOVE.B  #11,D0        ;set for task to clear screen
-        TRAP    #15
+        ;Clear screen for new address
+        MOVE.W      #$FF00, D1          ;Clear screen value
+        MOVE.B      #11,D0              ;set for task to clear screen
+        TRAP        #15
         
-        BRA prompt_user
+        BRA         prompt_user
 
 *.............................................................................
 * Debug Mode begin: Comment out when done
@@ -3911,6 +3932,7 @@ endLocation         DC.L    0
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
