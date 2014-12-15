@@ -932,7 +932,7 @@ mulsBody:
         RTS
 
 **************************************************************************************************
-*                                       Tests for OP Code RSRLWEA     
+*                                       Tests for OP Code RSRLW     
 **************************************************************************************************
 
 RSRLWEA:
@@ -1025,7 +1025,10 @@ RSLreg:
         TRAP    #15
         BRA LSRLregBody
 
-     
+
+**************************************************************************************************
+*                                       Tests for OP Code ASRLW     
+**************************************************************************************************
 
 ASRLWEA:
         
@@ -1119,6 +1122,10 @@ ASLreg:
         TRAP    #15
         BRA LSRLregBody
 
+
+**************************************************************************************************
+*                                       Tests for OP Code LSRL     
+**************************************************************************************************
 
 lsrlEA        DC.B %010000,%011000,%100000,%111000,%111001,0
 lsrlEAmasks   DC.B %111000,%111000,%111000,%111111,%111111,0       
@@ -1315,6 +1322,11 @@ LSRLcheckR:
         BSR     Get_Effective_Address
         MOVEM.L (SP)+,D1
         BRA LSRLcheckIRreturn
+
+
+**************************************************************************************************
+*                                       Tests for OP Code SUBQ     
+**************************************************************************************************
         
 subqEA        DC.B %000000,%001000,%010000,%011000,%100000,%111000,%111001,0
 subqEAmasks   DC.B %111000,%111000,%111000,%111000,%111000,%111111,%111111,0
@@ -3433,53 +3445,45 @@ Addr_Abs_Short                          ;0 = (xxx).W - Absolute Short Addressing
         ADDA.L      #word,A3            ;move past instruction
         
         ;print word (A3)
-        MOVEM.L D6/D3,-(SP)
-        MOVE.B #1,D6                    ;put size of word in D6
-        MOVE.W (A3),D3                  ;move data at (A3) to D3
-        BSR outputHex
-        MOVEM.L (SP)+,D6/D3
+        MOVEM.L     D6/D3,-(SP)
+        MOVE.B      #1,D6               ;put size of word in D6
+        MOVE.W      (A3),D3             ;move data at (A3) to D3
+        BSR         outputHex
+        MOVEM.L     (SP)+,D6/D3
         
         ADDI.L      #word,D7 
         BRA         Get_Effective_Address_Exit  ;return
                        
 Addr_Abs_Long                           ;1 = (xxx).L - Absolute Long Addressing Mode (001)
         
-        ;LEA         xxxL,A1             ;output 'D' for data register
-        ;MOVE.B      #14,D0              ;set for task to display null terminated 
-        ;TRAP        #15                 ;string without CR, LF
-
         ADDA.L      #word,A3
         
         ;print long (A3)
-        MOVEM.L D6/D3,-(SP)
-        MOVE.B #2,D6                    ;put size of word in D6
-        MOVE.L (A3),D3                  ;move data at (A3) to D3
-        BSR outputHex
-        MOVEM.L (SP)+,D6/D3
+        MOVEM.L     D6/D3,-(SP)
+        MOVE.B      #2,D6               ;put size of word in D6
+        MOVE.L      (A3),D3             ;move data at (A3) to D3
+        BSR         outputHex
+        MOVEM.L     (SP)+,D6/D3
 
         
         ADDI.L      #long,D7
         BRA         Get_Effective_Address_Exit  ;return
                        
 Addr_Immediate_Data                     ;4 = #(data) - Absolute Long Addressing Mode (100)
-
-*        LEA         iData,A1            ;output 'D' for data register
-*        MOVE.B      #14,D0              ;set for task to display null terminated 
-*        TRAP        #15                 ;string without CR, LF
         
-        MOVEM.L (SP)+,D6                 ;restore D6 data
-        MOVEM.L D6,-(SP)                 ;save D6 data again to balance stack
+        MOVEM.L     (SP)+,D6            ;restore D6 data
+        MOVEM.L     D6,-(SP)            ;save D6 data again to balance stack
 
         ;print '#'
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #'#',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;print char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #'#',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;print char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
-        CMPI.B #1,D6
-        BLE Addr_Abs_Short
-        BGT Addr_Abs_Long
+        CMPI.B      #1,D6
+        BLE         Addr_Abs_Short
+        BGT         Addr_Abs_Long
         
         BRA         Get_Effective_Address_Exit  ;return
 
@@ -3489,61 +3493,63 @@ invalidEA:
  
 Get_Effective_Address_Exit:     
 
-        MOVEM.L (SP)+,D6                 ;restore D6 data
+        MOVEM.L     (SP)+,D6            ;restore D6 data
         RTS                             ;return
 
 ***assume size in D6. 00 = byte, 01 = word, 10 = long
 printSize:
-        MOVEM.L D0/D1,-(SP)
+        MOVEM.L     D0/D1,-(SP)
         
         ;print '.'
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #'.',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;print char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #'.',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;print char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
-        CMPI.B #1,D6
-        BLT printByteSize
-        BEQ printWordSize
-        BGT printLongSize
+        CMPI.B      #1,D6
+        BLT         printByteSize
+        BEQ         printWordSize
+        BGT         printLongSize
+        
 printSizeDone:
+
         ;print ' '
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #' ',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;print char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #' ',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;print char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
         
-        MOVEM.L (SP)+,D0/D1
+        MOVEM.L     (SP)+,D0/D1
         RTS
         
 printByteSize:
         ;print 'B'
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #'B',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;print char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
-        BRA printSizeDone
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #'B',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;print char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
+        BRA         printSizeDone
         
 printWordSize:
         ;print 'W'
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #'W',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;print char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
-        BRA printSizeDone
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #'W',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;print char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
+        BRA         printSizeDone
 
 printLongSize:
         ;print 'L'
-        MOVEM.L D1,-(SP)                ;save D1 to the stack
-        MOVE.B #'L',D1                  ;put ascii value of char in D1
-        MOVE.B #6,D0                    ;move task 6 into D0
-        TRAP #15                        ;print char
-        MOVEM.L (SP)+,D1                ;pull D1 off the stack
-        BRA printSizeDone       
+        MOVEM.L     D1,-(SP)            ;save D1 to the stack
+        MOVE.B      #'L',D1             ;put ascii value of char in D1
+        MOVE.B      #6,D0               ;move task 6 into D0
+        TRAP        #15                 ;print char
+        MOVEM.L     (SP)+,D1            ;pull D1 off the stack
+        BRA         printSizeDone       
         
 
 ***assume hex to print is in D3***
@@ -3552,80 +3558,87 @@ printLongSize:
 hexoutputbuffer DC.L 0,0,0
 
 outputHex:
-        MOVEM.L D0/D2/D3/D6/A1/A4,-(SP)
-        LEA hexoutputbuffer,A4
-        CMPI.B #1,D6
-        BLT hexByte
-        BEQ hexWord
-        BGT hexLong
+        MOVEM.L     D0/D2/D3/D6/A1/A4,-(SP)
+        LEA         hexoutputbuffer,A4
+        CMPI.B      #1,D6
+        BLT         hexByte
+        BEQ         hexWord
+        BGT         hexLong
+        
 outputHexDone:
-        MOVE.B #0,(A4)
+
+        MOVE.B      #0,(A4)
         
         ;output string of hex
-        MOVE.B #14,D0
-        LEA hexoutputbuffer,A1
-        TRAP #15
-        MOVEM.L (SP)+ ,D0/D2/D3/D6/A1/A4
+        MOVE.B      #14,D0
+        LEA         hexoutputbuffer,A1
+        TRAP        #15
+        MOVEM.L     (SP)+ ,D0/D2/D3/D6/A1/A4
         RTS
         
 hexLong:
-        ROL.L #4,D3
-        BSR convertHexToASCII
-        ROL.L #4,D3
-        BSR convertHexToASCII
-        ROL.L #4,D3
-        BSR convertHexToASCII
-        ROL.L #4,D3
-        BSR convertHexToASCII
-        ROL.L #4,D3
-        BSR convertHexToASCII
-        ROL.L #4,D3
-        BSR convertHexToASCII
-        ROL.L #4,D3
-        BSR convertHexToASCII
-        ROL.L #4,D3
-        BSR convertHexToASCII
+
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
+        ROL.L       #4,D3
+        BSR         convertHexToASCII
         
-        BRA outputHexDone
+        BRA         outputHexDone
         
 hexWord:
-        ROL.W #4,D3
-        BSR convertHexToASCII
-        ROL.W #4,D3
-        BSR convertHexToASCII
-        ROL.W #4,D3
-        BSR convertHexToASCII
-        ROL.W #4,D3
-        BSR convertHexToASCII
 
-        BRA outputHexDone
+        ROL.W       #4,D3
+        BSR         convertHexToASCII
+        ROL.W       #4,D3
+        BSR         convertHexToASCII
+        ROL.W       #4,D3
+        BSR         convertHexToASCII
+        ROL.W       #4,D3
+        BSR         convertHexToASCII
+
+        BRA         outputHexDone
         
 hexByte:
-        ROL.B #4,D3
-        BSR convertHexToASCII
-        ROL.B #4,D3
-        BSR convertHexToASCII
+
+        ROL.B       #4,D3
+        BSR         convertHexToASCII
+        ROL.B       #4,D3
+        BSR         convertHexToASCII
         
-        BRA outputHexDone
+        BRA         outputHexDone
         
 convertHexToASCII:
-        MOVE.B D3,D2
-        ANDI.B #%00001111,D2            ;mask out all but hex at least significant nyb
-        CMPI.B #9,D2
-        BLE Number
-        BRA Letter       
+
+        MOVE.B      D3,D2
+        ANDI.B      #%00001111,D2            ;mask out all but hex at least significant nyb
+        CMPI.B      #9,D2
+        BLE         Number
+        BRA         Letter       
 
 Number:
-        ADDI.B #'0',D2
-        MOVE.B D2,(A4)+
+
+        ADDI.B      #'0',D2
+        MOVE.B      D2,(A4)+
         RTS
         
 Letter:
-        SUBI.B #$A,D2
-        ADDI.B #'A',D2
-        MOVE.B D2,(A4)+
-        RTS
 
+        SUBI.B      #$A,D2
+        ADDI.B      #'A',D2
+        MOVE.B      D2,(A4)+
+        RTS
 
 
 switchModeAndReg:
@@ -3658,21 +3671,19 @@ switchModeAndReg:
 * dont other    one
 * care
 *** 
-        AndI.B #%00111111,D2            ;remove unwanted bits from D2
-        ANDI.L #0,D3                    ;clear D3
-        MOVE.B D2,D3                    ;copy to D3
-        LSL.B  #3,D3 
-        LSR.B  #3,D2
-        ADD.B  D3,D2
+        AndI.B      #%00111111,D2       ;remove unwanted bits from D2
+        ANDI.L      #0,D3               ;clear D3
+        MOVE.B      D2,D3               ;copy to D3
+        LSL.B       #3,D3 
+        LSR.B       #3,D2
+        ADD.B       D3,D2
         RTS
 
         
 *==============================================================================
 *                            variables and constants
 *==============================================================================
-
-
-***initial user prompt stuff        
+    
 slPrompt        DC.B    'Enter a starting address from $0 to $00FFFFFE, "Q" or "q" to quit: $',0
 elPrompt        DC.B    'Enter a ending address from $0 to $00FFFFFE, "Q" or "q" to quit: $',0
 
@@ -3684,8 +3695,6 @@ to_from_err     DC.B    ' To address must cannot come before the from address!',
 
 spc             DC.B    ' '
 spc_len         DC.B    spc_len-spc
-***
-
 
 
 ***list of OP codes
@@ -3860,6 +3869,7 @@ endLocation         DC.L    0
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
