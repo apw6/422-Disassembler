@@ -4,7 +4,7 @@
 * Date       : 11/19
 * Description: Immediate data
 *-----------------------------------------------------------
-    ORG    $1000
+    ORG    $6000
 START:                  ; first instruction of program
 
 * Put program code here
@@ -14,7 +14,7 @@ START:                  ; first instruction of program
 
 *--------- SUB and SUB.Q test---------
 
-    SUBQ.B   D4,D0       ;SUB and SUBQ have the same data test of OR test
+    SUBQ.B  #4,D0       ;SUB and SUBQ have the same data test of OR test
     SUB.B   #22,D2
     SUB.B   #47,(A1)
     SUB.B   #47,(A2)
@@ -62,6 +62,8 @@ START:                  ; first instruction of program
 * Put variables and constants here
 
     END    START        ; last line of source
+
+
 
 
 

@@ -1,38 +1,77 @@
-00000000 Starting Address
+00006000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.15.02
-Created On: 12/1/2014 12:46:25 PM
+Created On: 12/16/2014 2:58:10 AM
 
-Line 1 WARNING: Label too long
-00000000                             1  S021000036384B50524F47202020323043524541544544204259204541535936384B6D
-Line 2 WARNING: Label too long
-00000000                             2  S1231000040200160411002F0412002F931A951B041A000D041B00180421000B04220015FD
-Line 3 WARNING: Label too long
-00000000                             3  S1231020042300250424002C04400021924297510452145D045903EA045A114F045B0CAD04
-Line 4 WARNING: Label too long
-00000000                             4  S12310400461091C04620DEA04640BBA047804BD37280478125F1728977824430478177D2A
-Line 5 WARNING: Label too long
-00000000                             5  S12310601128048000B72BCC04810098968204910000005104920098BDF30494009C18F0CC
-Line 6 WARNING: Label too long
-00000000                             6  S12310800499009BD371049A0206DC3D04990141E03704A300A7DCBD04A201312D0004A18A
-Line 7 WARNING: Label too long
-00000000                             7  S11D10A000BC615904B90098F0BD1111724604B900BA296E55341123FFFF17
-00000000                             8  S10510B8FFFF34
-00000000                             9  S804001000EB
-Line 10 WARNING: END directive missing, starting address not set
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : SUB and SUBQ tests
+00000000                             3  * Written by :
+00000000                             4  * Date       : 11/19
+00000000                             5  * Description: Immediate data
+00000000                             6  *-----------------------------------------------------------
+00006000                             7      ORG    $6000
+00006000                             8  START:                  ; first instruction of program
+00006000                             9  
+00006000                            10  * Put program code here
+00006000                            11  
+00006000                            12  
+00006000                            13  ;Immediate data
+00006000                            14  
+00006000                            15  *--------- SUB and SUB.Q test---------
+00006000                            16  
+00006000  5900                      17      SUBQ.B  #4,D0       ;SUB and SUBQ have the same data test of OR test
+00006002  0402 0016                 18      SUB.B   #22,D2
+00006006  0411 002F                 19      SUB.B   #47,(A1)
+0000600A  0412 002F                 20      SUB.B   #47,(A2)
+0000600E  931A                      21      SUB.B   D1,(A2)+
+00006010  951B                      22      SUB.B   D2,(A3)+
+00006012  041A 000D                 23      SUB.B   #13,(A2)+
+00006016  041B 0018                 24      SUB.B   #24,(A3)+    
+0000601A  0421 000B                 25      SUB.B   #11,-(A1)
+0000601E  0422 0015                 26      SUB.B   #21,-(A2)
+00006022  0423 0025                 27      SUB.B   #37,-(A3)
+00006026  0424 002C                 28      SUB.B   #44,-(A4)
+0000602A                            29      
+0000602A  0440 0021                 30      SUB.W   #33,D0
+0000602E  9242                      31      SUB.W   D2,D1
+00006030  9751                      32      SUB.W   D3,(A1)
+00006032  0452 145D                 33      SUB.W   #5213,(A2)
+00006036  0459 03EA                 34      SUB.W   #1002,(A1)+
+0000603A  045A 114F                 35      SUB.W   #4431,(A2)+
+0000603E  045B 0CAD                 36      SUB.W   #3245,(A3)+
+00006042  0461 091C                 37      SUB.W   #2332,-(A1)
+00006046  0462 0DEA                 38      SUB.W   #3562,-(A2)
+0000604A  0464 0BBA                 39      SUB.W   #3002,-(A4)
+0000604E  0478 04BD 3728            40      SUB.W   #1213,$3728
+00006054  0478 125F 1728            41      SUB.W   #4703,$1728
+0000605A  9778 2443                 42      SUB.W   D3,$2443
+0000605E  0478 177D 1128            43      SUB.W   #6013,$1128
+00006064                            44  
+00006064  0480 00B72BCC             45      SUB.L   #12004300,D0
+0000606A  0481 00989682             46      SUB.L   #10000002,D1
+00006070  0491 00000051             47      SUB.L   #0081,(A1)
+00006076  0492 0098BDF3             48      SUB.L   #10010099,(A2)
+0000607C  0494 009C18F0             49      SUB.L   #10230000,(A4)
+00006082  0499 009BD371             50      SUB.L   #10212209,(A1)+
+00006088  049A 0206DC3D             51      SUB.L   #34004029,(A2)+
+0000608E  0499 0141E037             52      SUB.L   #21094455,(A1)+
+00006094  04A3 00A7DCBD             53      SUB.L   #11001021,-(A3)
+0000609A  04A2 01312D00             54      SUB.L   #20000000,-(A2)
+000060A0  04A1 00BC6159             55      SUB.L   #12345689,-(A1)
+000060A6  04B9 0098F0BD 11117246    56      SUB.L   #10023101,$11117246
+000060B0  04B9 00BA296E 55341123    57      SUB.L   #12200302,$55341123
+000060BA                            58      
+000060BA                            59  
+000060BA  FFFF FFFF                 60      SIMHALT             ; halt simulator
+000060BE                            61  
+000060BE                            62  * Put variables and constants here
+000060BE                            63  
+000060BE                            64      END    START        ; last line of source
 
 No errors detected
-8 warnings generated
+No warnings generated
 
 
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-S021000036384B50524F4720202032304  0
-S10510B8FFFF34      0
-S11D10A000BC615904B90098F0BD11117  0
-S1231000040200160411002F0412002F9  0
-S1231020042300250424002C044000219  0
-S12310400461091C04620DEA04640BBA0  0
-S12310601128048000B72BCC048100989  0
-S12310800499009BD371049A0206DC3D0  0
-S804001000EB        0
+START               6000

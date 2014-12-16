@@ -3048,10 +3048,9 @@ ck_boundry:
 ck_boundry_error:
 
         LEA         even_msg,A1         ;Load odd error message into A1
-        MOVE.L      even_msg,D1         ;Load error length to D1
-        
-        MOVE.L      #0,D0               ;Display n characters of string at (A1), 
-                                        ; n is D1.W with CR, LF. 
+                
+        MOVE.L      #14,D0              ;Display null-terminated string at (A1), 
+                                        ;with CR, LF. 
         TRAP #15                        ;Display the error message
         MOVE.L #-1,D3                   ;Load -1 into return parameter
         RTS                             ;Return
@@ -3869,6 +3868,7 @@ endLocation         DC.L    0
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
