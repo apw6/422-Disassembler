@@ -3030,12 +3030,6 @@ ck_boundry:
         BGT         ck_size_error       ;Number of characters entered must be less
                                         ;than 9
         
-        MOVE.L      #$00000002,D2       ;Load a long 2 into D1
-        DIVU        D2,D1               ;Divide address by 2
-        SWAP        D1                  ;get remainder
-        CMP.B       #$01,D1             ;Check for remainder of 1
-        BEQ         ck_boundry_error    ;Number of characters entered must be an 
-                                        ;even number   
   
         RTS                             ;return
 
@@ -3049,7 +3043,7 @@ ck_boundry_error:
 
         LEA         even_msg,A1         ;Load odd error message into A1
                 
-        MOVE.L      #14,D0              ;Display null-terminated string at (A1), 
+        MOVE.L      #13,D0              ;Display null-terminated string at (A1), 
                                         ;with CR, LF. 
         TRAP #15                        ;Display the error message
         MOVE.L #-1,D3                   ;Load -1 into return parameter
@@ -3181,12 +3175,10 @@ NextHexDone:
 hex_range_error:
 
         LEA         invCharMsg,A1       ;Load invalid range message into A1
-        MOVE.L      invCharMsg,D1       ;Load error length to D1
-        
-        MOVE.L      #0,D0               ;Display n characters of string at (A1), 
-                                        ; n is D1.W with CR, LF. 
+        MOVE.L      #13,D0               ;Display string at (A1), 
+                                        ;with CR, LF. 
         TRAP        #15                 ;Display the error message
-        MOVE.L      #-1,D3              ;Load -1 into return parameter
+        MOVE.W      #-1,D3              ;Load -1 into return parameter
         BRA         NextHexReturn
         
 NextHexReturn:
